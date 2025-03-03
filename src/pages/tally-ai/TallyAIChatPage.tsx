@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Paperclip, Mic, CornerDownLeft } from 'lucide-react';
+import { Settings, Paperclip, Mic, CornerDownLeft, Send, Search, Bot, User, Loader2 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
-import { Button } from '@/components/ui/button';
-import { ChatMessageList } from '@/components/ui/chat-message-list';
-import { ChatBubble, ChatBubbleAvatar, ChatBubbleMessage } from '@/components/ui/chat-bubble';
-import { ChatInput } from '@/components/ui/chat-input';
+import { Button } from '../../components/ui/button';
+import { ChatMessageList } from '../../components/ui/chat-message-list';
+import { ChatBubble, ChatBubbleAvatar, ChatBubbleMessage } from '../../components/ui/chat-bubble';
+import { ChatInput } from '../../components/ui/chat-input';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { supabase } from '../../lib/supabase';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -49,6 +50,16 @@ export function TallyAIChatPage() {
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [businessData, setBusinessData] = useState<BusinessData | null>(null);
   const [input, setInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom when new messages arrive
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     if (selectedBusiness) {
@@ -348,95 +359,187 @@ ${JSON.stringify(businessData, null, 2)}`
     // Implement voice input functionality
   };
 
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days === 1) return 'Yesterday';
+    return date.toLocaleDateString();
+  };
+
   return (
     <Layout>
       <div className="h-full flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">TallyAI Chat</h1>
-          <button
+        {/* Header */}
+        <div className="flex justify-between items-center p-4 border-b bg-white">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-indigo-50 transition-colors hover:bg-indigo-100">
+              <Bot className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">TallyAI Assistant</h1>
+              {selectedBusiness && (
+                <p className="text-sm text-gray-500">{selectedBusiness.name}</p>
+              )}
+            </div>
+          </div>
+          <Button
             onClick={() => navigate('/tally-ai/settings')}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+            variant="ghost"
+            size="sm"
+            className="text-gray-600 hover:text-gray-900 transition-colors"
           >
-            <Settings className="h-4 w-4" />
+            <Settings className="h-4 w-4 mr-2" />
             Settings
-          </button>
+          </Button>
         </div>
 
-        <div className="flex-1 bg-background rounded-lg border shadow-sm flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-hidden">
+        {/* Chat Container */}
+        <div className="flex-1 overflow-hidden bg-gray-50">
+          <div className="h-full flex flex-col">
             <ChatMessageList>
-              {messages.map((message) => (
-                <ChatBubble
-                  key={message.id}
-                  variant={message.role === 'user' ? 'sent' : 'received'}
-                >
-                  <ChatBubbleAvatar
-                    className="h-8 w-8 shrink-0"
-                    src={
-                      message.role === 'user'
-                        ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&h=64&q=80&crop=faces&fit=crop"
-                        : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&q=80&crop=faces&fit=crop"
-                    }
-                    fallback={message.role === 'user' ? "US" : "AI"}
-                  />
-                  <ChatBubbleMessage
-                    variant={message.role === 'user' ? 'sent' : 'received'}
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-fade-in">
+                  <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4 animate-bounce-slow">
+                    <Bot className="h-8 w-8 text-indigo-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Welcome to TallyAI</h2>
+                  <p className="text-gray-500 max-w-md mb-8">
+                    I'm your AI assistant for financial analysis and business insights. How can I help you today?
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 max-w-2xl w-full">
+                    {[
+                      "Show me a summary of my business finances",
+                      "Analyze my cash flow trends",
+                      "List my top debtors",
+                      "Show recent transactions"
+                    ].map((suggestion, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setInput(suggestion)}
+                        className="p-4 text-left rounded-lg border border-gray-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/50 transition-colors"
+                      >
+                        <p className="text-sm font-medium text-gray-900">{suggestion}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                messages.map((message, index) => (
+                  <div
+                    key={message.id}
+                    className="animate-fade-in-up"
+                    style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    {message.content}
-                  </ChatBubbleMessage>
-                </ChatBubble>
-              ))}
+                    <ChatBubble
+                      variant={message.role === 'user' ? 'sent' : 'received'}
+                    >
+                      <ChatBubbleAvatar
+                        className="h-8 w-8"
+                        src={message.role === 'user' ? undefined : undefined}
+                        fallback={message.role === 'user' ? 'U' : 'AI'}
+                      />
+                      <div className="flex flex-col">
+                        <ChatBubbleMessage variant={message.role === 'user' ? 'sent' : 'received'}>
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <ReactMarkdown
+                              components={{
+                                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                                li: ({ children }) => <li className="mb-1">{children}</li>,
+                                code: ({ children }) => (
+                                  <code className="bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5">{children}</code>
+                                )
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                        </ChatBubbleMessage>
+                        <span className="text-xs text-gray-400 mt-1 px-2">
+                          {formatTimestamp(message.created_at)}
+                        </span>
+                      </div>
+                    </ChatBubble>
+                  </div>
+                ))
+              )}
 
               {isLoading && (
-                <ChatBubble variant="received">
-                  <ChatBubbleAvatar
-                    className="h-8 w-8 shrink-0"
-                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&q=80&crop=faces&fit=crop"
-                    fallback="AI"
-                  />
-                  <ChatBubbleMessage isLoading />
-                </ChatBubble>
+                <div className="animate-fade-in">
+                  <ChatBubble variant="received">
+                    <ChatBubbleAvatar
+                      className="h-8 w-8"
+                      fallback="AI"
+                    />
+                    <ChatBubbleMessage variant="received" isLoading />
+                  </ChatBubble>
+                </div>
               )}
+              <div ref={messagesEndRef} />
             </ChatMessageList>
-          </div>
 
-          <div className="p-4 border-t">
-            <form
-              onSubmit={handleSendMessage}
-              className="relative rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring p-1"
-            >
-              <ChatInput
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask TallyAI about your business finances..."
-                className="min-h-12 resize-none rounded-lg bg-background border-0 p-3 shadow-none focus-visible:ring-0"
-              />
-              <div className="flex items-center p-3 pt-0 justify-between">
-                <div className="flex">
+            {/* Input Area */}
+            <div className="border-t bg-white p-4 animate-slide-up">
+              <form
+                onSubmit={handleSendMessage}
+                className="relative flex items-end gap-2 max-w-4xl mx-auto"
+              >
+                <div className="flex-1 relative">
+                  <ChatInput
+                    value={input}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
+                    placeholder="Ask TallyAI about your business finances..."
+                    className="w-full min-h-[44px] resize-none rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
                   <Button
+                    type="button"
                     variant="ghost"
                     size="icon"
-                    type="button"
                     onClick={handleAttachFile}
+                    className="text-gray-500 hover:text-gray-700 transition-colors"
                   >
-                    <Paperclip className="size-4" />
+                    <Paperclip className="h-5 w-5" />
                   </Button>
 
                   <Button
+                    type="button"
                     variant="ghost"
                     size="icon"
-                    type="button"
                     onClick={handleMicrophoneClick}
+                    className="text-gray-500 hover:text-gray-700 transition-colors"
                   >
-                    <Mic className="size-4" />
+                    <Mic className="h-5 w-5" />
+                  </Button>
+
+                  <Button
+                    type="submit"
+                    disabled={isLoading || !input.trim()}
+                    className="bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg px-4 py-2 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        Send
+                        <Send className="h-4 w-4" />
+                      </>
+                    )}
                   </Button>
                 </div>
-                <Button type="submit" size="sm" className="ml-auto gap-1.5" disabled={isLoading || !input.trim()}>
-                  Send Message
-                  <CornerDownLeft className="size-3.5" />
-                </Button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       </div>

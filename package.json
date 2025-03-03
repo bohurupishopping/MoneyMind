@@ -11,12 +11,15 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.8",
+    "@tailwindcss/typography": "^0.5.16",
     "date-fns": "^3.3.1",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.51.1",
-    "react-router-dom": "^6.22.3"
+    "react-markdown": "^10.0.1",
+    "react-router-dom": "^6.22.3",
+    "styled-components": "^6.1.15"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

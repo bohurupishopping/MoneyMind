@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/Layout';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -26,8 +26,13 @@ export function TallyAISettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
 
-  // Memoize loadSettings to prevent it from changing on every render
-  const loadSettings = useCallback(async () => {
+  useEffect(() => {
+    if (selectedBusiness) {
+      loadSettings();
+    }
+  }, [selectedBusiness]);
+
+  const loadSettings = async () => {
     if (!selectedBusiness) return;
 
     try {
@@ -62,13 +67,7 @@ export function TallyAISettingsPage() {
     } catch (err) {
       console.error('Error loading TallyAI settings:', err);
     }
-  }, [selectedBusiness]);
-
-  useEffect(() => {
-    if (selectedBusiness) {
-      loadSettings();
-    }
-  }, [selectedBusiness, loadSettings]);
+  };
 
   const handleSave = async () => {
     if (!selectedBusiness || !settings) return;
@@ -241,4 +240,4 @@ export function TallyAISettingsPage() {
       </div>
     </Layout>
   );
-}
+} 
