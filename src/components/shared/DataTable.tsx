@@ -7,6 +7,7 @@ type DataTableProps<T> = {
     header: string;
     accessor: keyof T | ((item: T) => React.ReactNode);
     className?: string;
+    showOnMobile?: boolean; // New property to control visibility on mobile
   }[];
   onRowClick?: (item: T) => void;
   keyExtractor: (item: T) => string | number;
@@ -99,7 +100,9 @@ export function DataTable<T>({
                 <th
                   key={index}
                   scope="col"
-                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${column.className || ''}`}
+                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${column.className || ''} ${
+                    column.showOnMobile === false ? 'hidden md:table-cell' : ''
+                  }`}
                 >
                   {column.header}
                 </th>
@@ -117,7 +120,9 @@ export function DataTable<T>({
                   {columns.map((column, cellIndex) => (
                     <td
                       key={cellIndex}
-                      className={`px-6 py-4 whitespace-nowrap text-sm text-gray-500 ${column.className || ''}`}
+                      className={`px-6 py-4 whitespace-nowrap text-sm text-gray-500 ${column.className || ''} ${
+                        column.showOnMobile === false ? 'hidden md:table-cell' : ''
+                      }`}
                     >
                       {typeof column.accessor === 'function'
                         ? column.accessor(item)

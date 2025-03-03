@@ -1,16 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
   Brain, 
-  Search, 
-  BarChart3, 
-  DollarSign, 
-  ArrowUpRight, 
-  ArrowDownRight,
-  Calendar,
-  Building2,
-  Users,
-  CreditCard,
   Send,
   Loader2
 } from 'lucide-react';
@@ -58,18 +48,17 @@ type Message = {
 };
 
 export function TallyAIPage() {
-  const navigate = useNavigate();
   const { selectedBusiness } = useBusiness();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading] = useState(false);
+  const [, setError] = useState<string | null>(null);
   const [query, setQuery] = useState<InsightQuery>({
     type: 'general',
     timeRange: 'month'
   });
   const [customQuery, setCustomQuery] = useState('');
-  const [insights, setInsights] = useState<InsightResult | null>(null);
+  const [, setInsights] = useState<InsightResult | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -235,12 +224,6 @@ export function TallyAIPage() {
     }
   };
   
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
 
   if (!selectedBusiness) {
     return (

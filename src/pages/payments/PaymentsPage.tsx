@@ -133,14 +133,15 @@ export function PaymentsPage() {
           data={payments}
           keyExtractor={(item) => item.id}
           searchPlaceholder="Search payments..."
-          searchKeys={['payment_number', 'creditors.name', 'payment_method', 'reference']}
+          searchKeys={['payment_number', 'creditors', 'payment_method', 'reference']}
           emptyMessage="No payments found"
           onRowClick={(payment) => navigate(`/payments/${payment.id}`)}
           columns={[
             {
               header: 'Payment #',
               accessor: 'payment_number',
-              className: 'font-medium text-gray-900'
+              className: 'font-medium text-gray-900',
+              showOnMobile: false
             },
             {
               header: 'Date',
@@ -152,11 +153,13 @@ export function PaymentsPage() {
             },
             {
               header: 'Method',
-              accessor: 'payment_method'
+              accessor: 'payment_method',
+              showOnMobile: false
             },
             {
               header: 'Reference',
-              accessor: 'reference'
+              accessor: 'reference',
+              showOnMobile: false
             },
             {
               header: 'Amount',

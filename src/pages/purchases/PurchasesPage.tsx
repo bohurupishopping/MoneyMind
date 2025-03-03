@@ -112,14 +112,15 @@ export function PurchasesPage() {
           data={purchases}
           keyExtractor={(item) => item.id}
           searchPlaceholder="Search purchases..."
-          searchKeys={['purchase_number', 'item_name', 'description', 'creditors.name']}
+          searchKeys={['purchase_number', 'item_name', 'description', 'creditors']}
           emptyMessage="No purchases found"
           onRowClick={(purchase) => navigate(`/purchases/${purchase.id}`)}
           columns={[
             {
               header: 'Purchase #',
               accessor: 'purchase_number',
-              className: 'font-medium text-gray-900'
+              className: 'font-medium text-gray-900',
+              showOnMobile: false
             },
             {
               header: 'Date',
@@ -131,11 +132,13 @@ export function PurchasesPage() {
             },
             {
               header: 'Item',
-              accessor: 'item_name'
+              accessor: 'item_name',
+              showOnMobile: false
             },
             {
               header: 'Quantity',
-              accessor: 'quantity'
+              accessor: 'quantity',
+              showOnMobile: false
             },
             {
               header: 'Total',
