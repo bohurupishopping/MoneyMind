@@ -18,7 +18,8 @@ import {
   DollarSign,
   CreditCard as BankIcon,
   ArrowDownLeft,
-  ArrowUpRight
+  ArrowUpRight,
+  Bot
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -238,6 +239,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
               icon={<Home size={18} />} 
               label="Dashboard" 
               isActive={location.pathname === '/dashboard'} 
+            />
+            
+            {/* Add TallyAI Link */}
+            <SidebarLink 
+              to="/tally-ai" 
+              icon={<Bot size={18} />} 
+              label="TallyAI Chat" 
+              isActive={location.pathname.startsWith('/tally-ai')} 
             />
             
             {/* Transactions - Payments & Receipts */}

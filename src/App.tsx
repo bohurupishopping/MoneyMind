@@ -1,8 +1,8 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { BusinessProvider } from './contexts/BusinessContext';
 import { RequireAuth } from './components/auth/RequireAuth';
+import { useEffect } from 'react';
 
 // Auth Pages
 import { LoginPage } from './pages/auth/LoginPage';
@@ -56,7 +56,6 @@ import { NewBillPage } from './pages/invoices/NewBillPage';
 import { EditBillPage } from './pages/invoices/EditBillPage';
 
 // Banking & Cash Management
-import { BankingDashboardPage } from './pages/banking/BankingDashboardPage';
 import { BankAccountsPage } from './pages/banking/BankAccountsPage';
 import { NewBankAccountPage } from './pages/banking/NewBankAccountPage';
 import { EditBankAccountPage } from './pages/banking/EditBankAccountPage';
@@ -66,7 +65,36 @@ import { NewTransactionPage } from './pages/banking/NewTransactionPage';
 import { EditTransactionPage } from './pages/banking/EditTransactionPage';
 import { ReconciliationPage } from './pages/banking/ReconciliationPage';
 
+// TallyAI
+import { TallyAIChatPage } from './pages/tally-ai/TallyAIChatPage';
+import { TallyAISettingsPage } from './pages/tally-ai/TallyAISettingsPage';
+
 function App() {
+  // Add this debugging code
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      console.log('Visibility changed:', document.visibilityState);
+    };
+    
+    const handleFocus = () => {
+      console.log('Window focused');
+    };
+    
+    const handleBlur = () => {
+      console.log('Window blurred');
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
+  
   return (
     <BrowserRouter>
       <AuthProvider>
@@ -419,6 +447,24 @@ function App() {
               element={
                 <RequireAuth>
                   <ReconciliationPage />
+                </RequireAuth>
+              } 
+            />
+            
+            {/* TallyAI Routes */}
+            <Route 
+              path="/tally-ai" 
+              element={
+                <RequireAuth>
+                  <TallyAIChatPage />
+                </RequireAuth>
+              } 
+            />
+            <Route 
+              path="/tally-ai/settings" 
+              element={
+                <RequireAuth>
+                  <TallyAISettingsPage />
                 </RequireAuth>
               } 
             />

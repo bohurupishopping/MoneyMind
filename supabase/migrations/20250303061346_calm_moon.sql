@@ -586,6 +586,130 @@ CREATE POLICY "Users can delete bill items from their businesses"
     AND businesses.owner_id = auth.uid()
   ));
 
+-- Create tally_ai_chats table
+CREATE TABLE IF NOT EXISTS tally_ai_chats (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id),
+  title TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS on tally_ai_chats
+ALTER TABLE tally_ai_chats ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for users to read their own chats
+CREATE POLICY "Users can read own chats"
+  ON tally_ai_chats
+  FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid());
+
+-- Create policy for users to create chats
+CREATE POLICY "Users can create chats"
+  ON tally_ai_chats
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (user_id = auth.uid());
+
+-- Create policy for users to update their own chats
+CREATE POLICY "Users can update own chats"
+  ON tally_ai_chats
+  FOR UPDATE
+  TO authenticated
+  USING (user_id = auth.uid());
+
+-- Create policy for users to delete their own chats
+CREATE POLICY "Users can delete own chats"
+  ON tally_ai_chats
+  FOR DELETE
+  TO authenticated
+  USING (user_id = auth.uid());
+
+-- Create tally_ai_messages table
+CREATE TABLE IF NOT EXISTS tally_ai_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  chat_id UUID NOT NULL REFERENCES tally_ai_chats(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS on tally_ai_messages
+ALTER TABLE tally_ai_messages ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for users to read messages from their chats
+CREATE POLICY "Users can read messages from their chats"
+  ON tally_ai_messages
+  FOR SELECT
+  TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM tally_ai_chats
+    WHERE tally_ai_chats.id = tally_ai_messages.chat_id
+    AND tally_ai_chats.user_id = auth.uid()
+  ));
+
+-- Create policy for users to create messages in their chats
+CREATE POLICY "Users can create messages in their chats"
+  ON tally_ai_messages
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM tally_ai_chats
+    WHERE tally_ai_chats.id = tally_ai_messages.chat_id
+    AND tally_ai_chats.user_id = auth.uid()
+  ));
+
+-- Create tally_ai_settings table
+CREATE TABLE IF NOT EXISTS tally_ai_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  openai_api_key TEXT,
+  model TEXT NOT NULL DEFAULT 'gpt-4',
+  temperature DECIMAL(3,2) NOT NULL DEFAULT 0.7,
+  max_tokens INTEGER NOT NULL DEFAULT 2000,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(business_id)
+);
+
+-- Enable RLS on tally_ai_settings
+ALTER TABLE tally_ai_settings ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for users to read settings from their businesses
+CREATE POLICY "Users can read settings from their businesses"
+  ON tally_ai_settings
+  FOR SELECT
+  TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM businesses
+    WHERE businesses.id = tally_ai_settings.business_id
+    AND businesses.owner_id = auth.uid()
+  ));
+
+-- Create policy for users to create settings for their businesses
+CREATE POLICY "Users can create settings for their businesses"
+  ON tally_ai_settings
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM businesses
+    WHERE businesses.id = tally_ai_settings.business_id
+    AND businesses.owner_id = auth.uid()
+  ));
+
+-- Create policy for users to update settings from their businesses
+CREATE POLICY "Users can update settings from their businesses"
+  ON tally_ai_settings
+  FOR UPDATE
+  TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM businesses
+    WHERE businesses.id = tally_ai_settings.business_id
+    AND businesses.owner_id = auth.uid()
+  ));
+
 -- Create triggers to update the updated_at column automatically
 CREATE OR REPLACE FUNCTION update_modified_column()
 RETURNS TRIGGER AS $$
@@ -634,4 +758,13 @@ FOR EACH ROW EXECUTE FUNCTION update_modified_column();
 
 CREATE TRIGGER update_bill_items_modtime
 BEFORE UPDATE ON bill_items
+FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+-- Create triggers for the new tables
+CREATE TRIGGER update_tally_ai_chats_modtime
+BEFORE UPDATE ON tally_ai_chats
+FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+CREATE TRIGGER update_tally_ai_settings_modtime
+BEFORE UPDATE ON tally_ai_settings
 FOR EACH ROW EXECUTE FUNCTION update_modified_column();
