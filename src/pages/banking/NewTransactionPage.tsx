@@ -53,7 +53,7 @@ export function NewTransactionPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
-  const [nextTransactionNumber, setNextTransactionNumber] = useState('');
+  const [, setNextTransactionNumber] = useState('');
   
   useEffect(() => {
     if (selectedBusiness) {

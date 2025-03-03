@@ -4,9 +4,7 @@ import {
   ArrowDownRight, 
   ArrowUpRight, 
   RefreshCw, 
-  AlertCircle,
-  Trash2
-} from 'lucide-react';
+  AlertCircle} from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { PageHeader } from '../../components/shared/PageHeader';
 import { Card } from '../../components/shared/Card';
