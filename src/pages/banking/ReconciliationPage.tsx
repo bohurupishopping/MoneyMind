@@ -76,7 +76,7 @@ export function ReconciliationPage() {
     try {
       const { data, error } = await supabase
         .from('bank_accounts')
-        .select('id, name, current_balance')
+        .select('*')
         .eq('business_id', selectedBusiness.id)
         .order('name');
         
