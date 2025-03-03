@@ -59,7 +59,7 @@ export function ReceiptsPage() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(amount);
   };
   
@@ -112,7 +112,7 @@ export function ReceiptsPage() {
           data={receipts}
           keyExtractor={(item) => item.id}
           searchPlaceholder="Search receipts..."
-          searchKeys={['receipt_number', 'debtors.name', 'payment_method', 'reference']}
+          searchKeys={['receipt_number', 'debtors', 'payment_method', 'reference']}
           emptyMessage="No payment receipts found"
           onRowClick={(receipt) => navigate(`/receipts/${receipt.id}`)}
           columns={[
