@@ -22,10 +22,9 @@ export const ChatContainer = tw.div`
   min-h-screen
   w-full
   bg-gradient-to-b from-white to-gray-50
-  flex
-  flex-col
   overflow-hidden
   font-sans
+  relative
 `;
 
 export const Header = tw.header`
@@ -121,19 +120,21 @@ export const MessageBubble = tw.div<MessageBubbleProps>`
 `;
 
 export const InputSection = tw.div`
-  sticky
+  fixed
   bottom-0
   left-0
   right-0
-  z-20
-  bg-transparent
-  backdrop-blur-sm
-  p-4
+  z-50
+  bg-gradient-to-t from-white/95 via-white/80 to-transparent
+  px-4
   pb-6
+  pt-4
   sm:pb-8
+  sm:pt-4
   w-full
   pointer-events-none
   transition-all
+  backdrop-blur-sm
 `;
 
 export const InputWrapper = tw.div`
@@ -142,6 +143,7 @@ export const InputWrapper = tw.div`
   relative 
   flex
   items-center
+  gap-2
   sm:gap-3
   w-full
   rounded-full
@@ -152,7 +154,7 @@ export const InputWrapper = tw.div`
   focus-within:ring-2
   focus-within:ring-indigo-500
   focus-within:border-indigo-500
-  px-3
+  px-3.5
   py-1.5
   sm:px-4
   sm:py-2
