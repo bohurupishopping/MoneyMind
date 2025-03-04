@@ -12,7 +12,7 @@ export function SignupPage() {
         <div className="inline-flex items-center justify-center p-3 bg-white rounded-full shadow-lg mb-4">
           <LibraryBig className="h-10 w-10 text-indigo-600" />
         </div>
-        <h1 className="text-3xl font-bold text-white">AccuBooks</h1>
+        <h1 className="text-3xl font-bold text-white">ArthoSutra</h1>
         <p className="text-white text-opacity-80 mt-2">Create an Account</p>
       </div>
       

@@ -183,7 +183,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col h-full">
           {/* Logo and business selector */}
           <div className="p-4 border-b border-indigo-800">
-            <h1 className="text-xl font-bold mb-4">AccuBooks</h1>
+            <h1 className="text-xl font-bold mb-4">ArthoSutra</h1>
             
             {/* Business selector dropdown */}
             <div className="relative">
