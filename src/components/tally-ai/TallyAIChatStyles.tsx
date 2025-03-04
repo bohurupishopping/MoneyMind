@@ -56,22 +56,26 @@ export const ChatSection = tw.div`
   sm:h-[calc(100%-4rem)]
   flex-grow
   overflow-hidden
+  w-full
 `;
 
 export const MessagesContainer = tw.div`
   flex-1 
   overflow-y-auto 
-  px-3 
-  sm:px-5 
-  md:px-8 
-  py-5
-  sm:py-8 
-  space-y-5
-  sm:space-y-7 
+  px-2 
+  sm:px-4 
+  md:px-6 
+  py-4
+  sm:py-6 
+  space-y-4
+  sm:space-y-6 
   scrollbar-thin
   scrollbar-thumb-gray-300
   scrollbar-track-transparent
   bg-transparent
+  w-full
+  max-w-4xl
+  mx-auto
 `;
 
 export const MessageWrapper = tw.div`
@@ -79,13 +83,8 @@ export const MessageWrapper = tw.div`
   items-start 
   gap-3
   sm:gap-4 
-  max-w-[90%]
-  sm:max-w-[85%] 
-  animate-fade-in-up
+  max-w-full
   w-full
-  transition-all
-  duration-300
-  hover:translate-y-[-2px]
 `;
 
 export const Avatar = tw.div<AvatarProps>`
@@ -106,9 +105,6 @@ export const Avatar = tw.div<AvatarProps>`
     shadow-md
     ring-2
     ring-white
-    transition-transform
-    duration-300
-    hover:scale-110
   `}
 `;
 
@@ -134,21 +130,23 @@ export const InputSection = tw.div`
   border-gray-200
   bg-white/95
   backdrop-blur-sm
-  px-3
-  sm:px-5
-  py-4
-  sm:py-5
-  md:px-8
+  px-2
+  sm:px-4
+  py-3
+  sm:py-4
+  md:px-6
   shadow-[0_-1px_3px_rgba(0,0,0,0.05)]
+  w-full
 `;
 
 export const InputWrapper = tw.div`
-  max-w-3xl 
+  max-w-4xl 
   mx-auto 
   relative 
   flex 
   items-end 
-  gap-3
+  gap-2
+  sm:gap-3
   w-full
   bg-white
   rounded-2xl
@@ -158,29 +156,20 @@ export const InputWrapper = tw.div`
   focus-within:ring-2
   focus-within:ring-indigo-500
   focus-within:border-indigo-500
-  transition-all
-  duration-200
-  p-3
-  sm:p-4
-  hover:border-indigo-300
+  p-2
+  sm:p-3
+  md:p-4
 `;
 
 export const SuggestionButton = tw.button`
-  group 
-  p-4
-  sm:p-5 
+  p-3
+  sm:p-4 
   text-left 
   rounded-xl 
   border 
   border-gray-200
   bg-white
-  hover:border-indigo-300
-  hover:bg-indigo-50/70
-  transition-all
-  duration-300
   shadow-sm
-  hover:shadow-md
-  hover:translate-y-[-2px]
 `;
 
 export const EmptyStateContainer = tw.div`
@@ -190,32 +179,28 @@ export const EmptyStateContainer = tw.div`
   justify-center 
   min-h-full 
   text-center 
-  p-5 
-  md:p-10
+  p-4 
+  sm:p-6
+  md:p-8
   max-w-3xl
   mx-auto
   w-full
-  animate-fade-in
 `;
 
 export const EmptyStateIcon = tw.div`
-  w-16
-  h-16
-  sm:w-20 
-  sm:h-20 
+  w-14
+  h-14
+  sm:w-16 
+  sm:h-16 
   rounded-full 
   bg-gradient-to-br from-indigo-100 to-indigo-200
   flex
   items-center
   justify-center
-  mb-8
-  transition-transform
-  duration-500
-  hover:scale-110
+  mb-6
   shadow-md
   ring-4
   ring-white
-  animate-bounce-slow
 `;
 
 export const LoadingDots = tw.div`
@@ -251,12 +236,9 @@ export const SidebarButton = tw.button<SidebarButtonProps>`
     rounded-xl
     text-sm
     font-medium
-    transition-all
-    duration-200
     ${p.active 
       ? 'bg-indigo-100 text-indigo-700 shadow-sm'
       : 'text-gray-700 hover:bg-gray-100'}
-    hover:translate-x-1
   `}
 `;
 
@@ -268,10 +250,6 @@ export const ChatThreadItem = tw.div`
   rounded-xl
   hover:bg-gray-100
   cursor-pointer
-  transition-all
-  duration-200
   text-sm
   text-gray-700
-  hover:shadow-sm
-  hover:translate-x-1
 `;
