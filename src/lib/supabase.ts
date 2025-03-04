@@ -61,6 +61,7 @@ export type Creditor = {
 };
 
 export type PaymentReceipt = {
+  debtors: any;
   id: string;
   business_id: string;
   receipt_number: string;
@@ -105,6 +106,7 @@ export type Purchase = {
 };
 
 export type Invoice = {
+  debtors: any;
   id: string;
   business_id: string;
   debtor_id: string | null;

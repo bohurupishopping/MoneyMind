@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase, Business } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
@@ -23,7 +23,34 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch businesses on user change
+  // Memoize fetchBusinesses to prevent unnecessary recreations
+  const fetchBusinesses = useCallback(async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('owner_id', user.id)
+        .order('name');
+        
+      if (error) {
+        throw error;
+      }
+      
+      setBusinesses(data || []);
+    } catch (err: any) {
+      console.error('Error fetching businesses:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Fetch businesses only when user changes
   useEffect(() => {
     if (user) {
       fetchBusinesses();
@@ -32,11 +59,11 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       setSelectedBusiness(null);
       setLoading(false);
     }
-  }, [user]);
+  }, [user, fetchBusinesses]);
 
-  // Set selected business from localStorage or first business
+  // Set selected business from localStorage only when businesses change
   useEffect(() => {
-    if (businesses.length > 0) {
+    if (businesses.length > 0 && !selectedBusiness) {
       const savedBusinessId = localStorage.getItem('selectedBusinessId');
       
       if (savedBusinessId) {
@@ -50,7 +77,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       // Default to first business if no saved selection or saved selection not found
       setSelectedBusiness(businesses[0]);
     }
-  }, [businesses]);
+  }, [businesses, selectedBusiness]);
 
   // Ensure the user has a profile record
   const ensureProfileExists = async () => {
@@ -76,32 +103,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }
     
     return true;
-  };
-
-  const fetchBusinesses = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const { data, error } = await supabase
-        .from('businesses')
-        .select('*')
-        .eq('owner_id', user.id)
-        .order('name');
-        
-      if (error) {
-        throw error;
-      }
-      
-      setBusinesses(data || []);
-    } catch (err: any) {
-      console.error('Error fetching businesses:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const selectBusiness = (businessId: string) => {
@@ -222,7 +223,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const value = {
+  const value = useMemo(() => ({
     businesses,
     selectedBusiness,
     loading,
@@ -232,7 +233,17 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     createBusiness,
     updateBusiness,
     deleteBusiness
-  };
+  }), [
+    businesses,
+    selectedBusiness,
+    loading,
+    error,
+    fetchBusinesses,
+    selectBusiness,
+    createBusiness,
+    updateBusiness,
+    deleteBusiness
+  ]);
 
   return <BusinessContext.Provider value={value}>{children}</BusinessContext.Provider>;
 }

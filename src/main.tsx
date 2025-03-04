@@ -14,16 +14,5 @@ const AppWrapper = import.meta.env.DEV ? (
 
 const root = createRoot(document.getElementById('root')!);
 
-// Prevent auto-refresh on visibility change
-let visibilityTimeout: number;
-
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    // Clear any pending refreshes when hidden
-    if (visibilityTimeout) {
-      window.clearTimeout(visibilityTimeout);
-    }
-  }
-});
-
+// Render the app
 root.render(AppWrapper);

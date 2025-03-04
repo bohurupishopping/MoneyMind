@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   CreditCard, 
@@ -34,13 +34,8 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (selectedBusiness) {
-      fetchDashboardData();
-    }
-  }, [selectedBusiness]);
-
-  const fetchDashboardData = async () => {
+  // Memoize fetchDashboardData to prevent unnecessary recreations
+  const fetchDashboardData = useCallback(async () => {
     if (!selectedBusiness) return;
     
     setLoading(true);
@@ -119,15 +114,23 @@ export function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedBusiness?.id]); // Only depend on the business ID, not the entire business object
 
-  // Helper to format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+  // Fetch data only when selected business ID changes
+  useEffect(() => {
+    if (selectedBusiness?.id) {
+      fetchDashboardData();
+    }
+  }, [selectedBusiness?.id, fetchDashboardData]);
+
+  // Memoize currency formatter
+  const formatCurrency = useMemo(() => {
+    const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'INR'
-    }).format(amount);
-  };
+    });
+    return (amount: number) => formatter.format(amount);
+  }, []);
 
   // Display loading state
   if (loading) {
