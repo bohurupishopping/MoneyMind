@@ -13,6 +13,10 @@ type PaymentWithCreditor = Payment & {
   creditors: {
     name: string;
   } | null;
+  bank_accounts?: {
+    name: string;
+    account_type: string;
+  } | null;
 };
 
 export function PaymentsPage() {
@@ -40,7 +44,7 @@ export function PaymentsPage() {
     try {
       const { data, error } = await supabase
         .from('payments')
-        .select('*, creditors(name)')
+        .select('*, creditors(name), bank_accounts(name, account_type)')
         .eq('business_id', selectedBusiness.id)
         .order('payment_date', { ascending: false });
         
@@ -153,7 +157,9 @@ export function PaymentsPage() {
             },
             {
               header: 'Method',
-              accessor: 'payment_method',
+              accessor: (item) => item.payment_method === 'Bank Transfer' && item.bank_accounts 
+                ? `Bank Transfer - ${item.bank_accounts.name}`
+                : item.payment_method,
               showOnMobile: false
             },
             {

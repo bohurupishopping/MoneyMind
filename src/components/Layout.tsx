@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useBusiness } from '../contexts/BusinessContext';
 import { 
   Home, 
-  Receipt, 
   Users, 
   ShoppingBag, 
   FileText, 
@@ -13,7 +12,6 @@ import {
   X, 
   ChevronDown,
   Building2,
-  CreditCard,
   Settings,
   DollarSign,
   CreditCard as BankIcon,
@@ -163,7 +161,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Mobile sidebar toggle */}
-      <div className="fixed z-20 top-4 left-4 md:hidden">
+      <div className="fixed z-20 top-4 right-4 md:hidden">
         <button
           onClick={toggleSidebar}
           className="p-2 rounded-md bg-indigo-600 text-white focus:outline-none"

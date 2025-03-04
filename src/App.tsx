@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { BusinessProvider } from './contexts/BusinessContext';
 import { RequireAuth } from './components/auth/RequireAuth';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 // Auth Pages
 import { LoginPage } from './pages/auth/LoginPage';
@@ -70,28 +70,19 @@ import { TallyAIChatPage } from './pages/tally-ai/TallyAIChatPage';
 import { TallyAISettingsPage } from './pages/tally-ai/TallyAISettingsPage';
 
 function App() {
-  // Add this debugging code
+  const [, setIsVisible] = useState(true);
+
   useEffect(() => {
+    // Handle visibility changes without causing unnecessary re-renders
     const handleVisibilityChange = () => {
-      console.log('Visibility changed:', document.visibilityState);
+      setIsVisible(!document.hidden);
     };
-    
-    const handleFocus = () => {
-      console.log('Window focused');
-    };
-    
-    const handleBlur = () => {
-      console.log('Window blurred');
-    };
-    
+
+    // Only add visibility change listener
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('blur', handleBlur);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('blur', handleBlur);
     };
   }, []);
   

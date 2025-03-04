@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Paperclip, Mic, CornerDownLeft, Send, Search, Bot, User, Loader2 } from 'lucide-react';
+import { Settings, Bot, User, Loader2 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { Button } from '../../components/ui/button';
-import { ChatMessageList } from '../../components/ui/chat-message-list';
-import { ChatBubble, ChatBubbleAvatar, ChatBubbleMessage } from '../../components/ui/chat-bubble';
 import { ChatInput } from '../../components/ui/chat-input';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { supabase } from '../../lib/supabase';
@@ -123,13 +121,13 @@ export function TallyAIChatPage() {
 
       // Fetch recent bank transactions
       const { data: bank_transactions } = await supabase
-        .from('bank_transactions')
+        .from('transactions')
         .select(`
           *,
           bank_account:bank_accounts(*)
         `)
         .eq('business_id', selectedBusiness.id)
-        .order('transaction_date', { ascending: false })
+        .order('date', { ascending: false })
         .limit(50);
 
       // Calculate totals
@@ -142,8 +140,8 @@ export function TallyAIChatPage() {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
       const recent_transactions = (bank_transactions || [])
-        .filter(tx => new Date(tx.transaction_date) >= thirtyDaysAgo)
-        .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
+        .filter(tx => new Date(tx.date) >= thirtyDaysAgo)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
       setBusinessData({
         debtors: debtors || [],
@@ -351,13 +349,7 @@ ${JSON.stringify(businessData, null, 2)}`
     }
   };
 
-  const handleAttachFile = () => {
-    // Implement file attachment functionality
-  };
 
-  const handleMicrophoneClick = () => {
-    // Implement voice input functionality
-  };
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -376,17 +368,17 @@ ${JSON.stringify(businessData, null, 2)}`
 
   return (
     <Layout>
-      <div className="h-full flex flex-col">
+      <div className="relative h-[calc(100vh-4rem)] lg:h-[calc(100vh-2rem)] bg-gray-50">
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b bg-white">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-indigo-50 transition-colors hover:bg-indigo-100">
-              <Bot className="h-5 w-5 text-indigo-600" />
+        <header className="sticky top-0 z-10 flex items-center justify-between px-4 h-16 bg-white/80 backdrop-blur-lg border-b border-gray-200/80">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500/10 to-indigo-500/20">
+              <Bot className="w-5 h-5 text-indigo-600" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">TallyAI Assistant</h1>
+              <h1 className="text-lg font-semibold text-gray-900">TallyAI</h1>
               {selectedBusiness && (
-                <p className="text-sm text-gray-500">{selectedBusiness.name}</p>
+                <p className="text-sm text-gray-500 truncate max-w-[200px]">{selectedBusiness.name}</p>
               )}
             </div>
           </div>
@@ -394,152 +386,148 @@ ${JSON.stringify(businessData, null, 2)}`
             onClick={() => navigate('/tally-ai/settings')}
             variant="ghost"
             size="sm"
-            className="text-gray-600 hover:text-gray-900 transition-colors"
+            className="text-gray-600 hover:text-gray-900"
           >
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
+            <Settings className="w-4 h-4" />
           </Button>
-        </div>
+        </header>
 
         {/* Chat Container */}
-        <div className="flex-1 overflow-hidden bg-gray-50">
-          <div className="h-full flex flex-col">
-            <ChatMessageList>
-              {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-fade-in">
-                  <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4 animate-bounce-slow">
-                    <Bot className="h-8 w-8 text-indigo-600" />
-                  </div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Welcome to TallyAI</h2>
-                  <p className="text-gray-500 max-w-md mb-8">
-                    I'm your AI assistant for financial analysis and business insights. How can I help you today?
-                  </p>
-                  <div className="grid grid-cols-2 gap-4 max-w-2xl w-full">
-                    {[
-                      "Show me a summary of my business finances",
-                      "Analyze my cash flow trends",
-                      "List my top debtors",
-                      "Show recent transactions"
-                    ].map((suggestion, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setInput(suggestion)}
-                        className="p-4 text-left rounded-lg border border-gray-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/50 transition-colors"
-                      >
-                        <p className="text-sm font-medium text-gray-900">{suggestion}</p>
-                      </button>
-                    ))}
-                  </div>
+        <div className="relative flex flex-col h-[calc(100%-4rem)]">
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center min-h-full text-center p-4 md:p-8">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-indigo-500/20 flex items-center justify-center mb-6 rotate-3 transform transition-transform hover:rotate-6">
+                  <Bot className="w-8 h-8 text-indigo-600" />
                 </div>
-              ) : (
-                messages.map((message, index) => (
+                <h2 className="text-xl font-semibold text-gray-900 mb-3">Welcome to TallyAI</h2>
+                <p className="text-gray-500 max-w-md mb-8">
+                  I'm your AI assistant for financial analysis and business insights. How can I help you today?
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
+                  {[
+                    "Show me a summary of my business finances",
+                    "Analyze my cash flow trends",
+                    "List my top debtors",
+                    "Show recent transactions"
+                  ].map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setInput(suggestion)}
+                      className="group p-4 text-left rounded-2xl border border-gray-200 bg-white hover:border-indigo-200 hover:bg-gradient-to-br hover:from-white hover:to-indigo-50/50 transition-all duration-200 shadow-sm hover:shadow"
+                    >
+                      <p className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">{suggestion}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6 max-w-4xl mx-auto">
+                {messages.map((message, index) => (
                   <div
                     key={message.id}
                     className="animate-fade-in-up"
-                    style={{ animationDelay: `${index * 0.1}s` }}
+                    style={{ animationDelay: `${index * 0.05}s` }}
                   >
-                    <ChatBubble
-                      variant={message.role === 'user' ? 'sent' : 'received'}
-                    >
-                      <ChatBubbleAvatar
-                        className="h-8 w-8"
-                        src={message.role === 'user' ? undefined : undefined}
-                        fallback={message.role === 'user' ? 'U' : 'AI'}
-                      />
-                      <div className="flex flex-col">
-                        <ChatBubbleMessage variant={message.role === 'user' ? 'sent' : 'received'}>
-                          <div className="prose prose-sm dark:prose-invert max-w-none">
-                            <ReactMarkdown
-                              components={{
-                                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                                ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-                                ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-                                li: ({ children }) => <li className="mb-1">{children}</li>,
-                                code: ({ children }) => (
-                                  <code className="bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5">{children}</code>
-                                )
-                              }}
-                            >
-                              {message.content}
-                            </ReactMarkdown>
+                    <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`flex items-start gap-3 max-w-[85%] ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                          message.role === 'user' 
+                            ? 'bg-gradient-to-br from-indigo-500/10 to-indigo-500/20' 
+                            : 'bg-gradient-to-br from-gray-100 to-gray-200/80'
+                        }`}>
+                          {message.role === 'user' ? (
+                            <User className="w-4 h-4 text-indigo-600" />
+                          ) : (
+                            <Bot className="w-4 h-4 text-gray-600" />
+                          )}
+                        </div>
+                        <div className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+                          <div className={`rounded-2xl px-4 py-2.5 ${
+                            message.role === 'user'
+                              ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                              : 'bg-white border border-gray-200 shadow-sm'
+                          }`}>
+                            <div className="prose prose-sm max-w-none">
+                              <ReactMarkdown
+                                components={{
+                                  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                  ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                                  ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                                  li: ({ children }) => <li className="mb-1">{children}</li>,
+                                  code: ({ children }) => (
+                                    <code className="bg-black/5 rounded px-1 py-0.5">{children}</code>
+                                  )
+                                }}
+                              >
+                                {message.content}
+                              </ReactMarkdown>
+                            </div>
                           </div>
-                        </ChatBubbleMessage>
-                        <span className="text-xs text-gray-400 mt-1 px-2">
-                          {formatTimestamp(message.created_at)}
-                        </span>
+                          <span className="text-xs text-gray-400 mt-1 px-1">
+                            {formatTimestamp(message.created_at)}
+                          </span>
+                        </div>
                       </div>
-                    </ChatBubble>
+                    </div>
                   </div>
-                ))
-              )}
+                ))}
 
-              {isLoading && (
-                <div className="animate-fade-in">
-                  <ChatBubble variant="received">
-                    <ChatBubbleAvatar
-                      className="h-8 w-8"
-                      fallback="AI"
-                    />
-                    <ChatBubbleMessage variant="received" isLoading />
-                  </ChatBubble>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </ChatMessageList>
+                {isLoading && (
+                  <div className="animate-fade-in">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200/80">
+                        <Bot className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <div className="flex-1 max-w-[85%]">
+                        <div className="bg-white border border-gray-200 rounded-2xl px-4 py-2.5 shadow-sm">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-indigo-400/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="w-2 h-2 bg-indigo-400/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="w-2 h-2 bg-indigo-400/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} className="h-4" />
+              </div>
+            )}
+          </div>
 
-            {/* Input Area */}
-            <div className="border-t bg-white p-4 animate-slide-up">
-              <form
-                onSubmit={handleSendMessage}
-                className="relative flex items-end gap-2 max-w-4xl mx-auto"
-              >
-                <div className="flex-1 relative">
+          {/* Input Area */}
+          <div className="border-t bg-white/80 backdrop-blur-lg">
+            <form onSubmit={handleSendMessage} className="p-4 max-w-4xl mx-auto">
+              <div className="relative flex items-end gap-2">
+                <div className="flex-1">
                   <ChatInput
                     value={input}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
                     placeholder="Ask TallyAI about your business finances..."
-                    className="w-full min-h-[44px] resize-none rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage(e);
+                      }
+                    }}
+                    className="w-full min-h-[44px] max-h-[120px] resize-none rounded-2xl bg-white border border-gray-200 px-4 py-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all placeholder:text-gray-400"
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleAttachFile}
-                    className="text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    <Paperclip className="h-5 w-5" />
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleMicrophoneClick}
-                    className="text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    <Mic className="h-5 w-5" />
-                  </Button>
-
-                  <Button
-                    type="submit"
-                    disabled={isLoading || !input.trim()}
-                    className="bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg px-4 py-2 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        Send
-                        <Send className="h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </div>
+                <Button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  className="h-11 px-5 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white hover:from-indigo-600 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-indigo-500/20"
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Send'
+                  )}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       </div>

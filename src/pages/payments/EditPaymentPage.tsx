@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, CreditCard, DollarSign } from 'lucide-react';
+import { CreditCard, DollarSign, User, FileText } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { PageHeader } from '../../components/shared/PageHeader';
 import { Card } from '../../components/shared/Card';
 import { FormRow } from '../../components/shared/FormRow';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { supabase, Creditor, Payment, BankAccount, Transaction } from '../../lib/supabase';
+import { supabase, Creditor, Payment, BankAccount, Transaction, Bill } from '../../lib/supabase';
 
 type FormData = {
   paymentNumber: string;
   amount: string;
   paymentDate: string;
   creditorId: string;
-  paymentMethod: string;
+  billId: string;
   bankAccountId: string;
   reference: string;
   notes: string;
+  createBankTransaction: boolean;
 };
 
 export function EditPaymentPage() {
@@ -29,10 +30,11 @@ export function EditPaymentPage() {
     amount: '',
     paymentDate: '',
     creditorId: '',
-    paymentMethod: '',
+    billId: '',
     bankAccountId: '',
     reference: '',
     notes: '',
+    createBankTransaction: false
   });
   
   const [originalData, setOriginalData] = useState<Payment | null>(null);
@@ -42,6 +44,7 @@ export function EditPaymentPage() {
   const [fetchLoading, setFetchLoading] = useState(true);
   const [creditors, setCreditors] = useState<Creditor[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [bills, setBills] = useState<Bill[]>([]);
   
   useEffect(() => {
     if (selectedBusiness && id) {
@@ -51,6 +54,34 @@ export function EditPaymentPage() {
       fetchRelatedTransaction();
     }
   }, [selectedBusiness, id]);
+
+  useEffect(() => {
+    if (selectedBusiness && formData.creditorId) {
+      fetchBillsForCreditor(formData.creditorId);
+    } else {
+      setBills([]);
+    }
+  }, [selectedBusiness, formData.creditorId]);
+
+  const fetchBillsForCreditor = async (creditorId: string) => {
+    if (!selectedBusiness || !creditorId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('bills')
+        .select('*')
+        .eq('business_id', selectedBusiness.id)
+        .eq('creditor_id', creditorId)
+        .eq('status', 'PENDING')
+        .order('issue_date', { ascending: false });
+        
+      if (error) throw error;
+      
+      setBills(data || []);
+    } catch (err: any) {
+      console.error('Error fetching bills:', err);
+    }
+  };
   
   const fetchPayment = async () => {
     if (!selectedBusiness || !id) return;
@@ -74,10 +105,11 @@ export function EditPaymentPage() {
           amount: data.amount.toString(),
           paymentDate: new Date(data.payment_date).toISOString().split('T')[0],
           creditorId: data.creditor_id || '',
-          paymentMethod: data.payment_method || '',
-          bankAccountId: '', // Will be filled in by fetchRelatedTransaction
+          billId: data.bill_id || '',
+          bankAccountId: '', // Will be filled by fetchRelatedTransaction
           reference: data.reference || '',
           notes: data.notes || '',
+          createBankTransaction: data.payment_method === 'Bank Transfer'
         });
       } else {
         navigate('/payments');
@@ -95,7 +127,6 @@ export function EditPaymentPage() {
     if (!selectedBusiness || !id) return;
     
     try {
-      // Look for a transaction that references this payment
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
@@ -115,7 +146,8 @@ export function EditPaymentPage() {
         setRelatedTransaction(data);
         setFormData(prev => ({
           ...prev,
-          bankAccountId: data.account_id
+          bankAccountId: data.account_id,
+          createBankTransaction: true
         }));
       }
     } catch (err: any) {
@@ -160,8 +192,14 @@ export function EditPaymentPage() {
   };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
     
     // Clear error when field is edited
     if (errors[name as keyof FormData]) {
@@ -189,8 +227,8 @@ export function EditPaymentPage() {
       newErrors.paymentDate = 'Payment date is required';
     }
     
-    if (formData.paymentMethod === 'Bank Transfer' && !formData.bankAccountId) {
-      newErrors.bankAccountId = 'Please select a bank account';
+    if (formData.createBankTransaction && !formData.bankAccountId) {
+      newErrors.bankAccountId = 'Please select a bank account or uncheck "Create bank transaction"';
     }
     
     setErrors(newErrors);
@@ -218,7 +256,9 @@ export function EditPaymentPage() {
           amount: newAmount,
           payment_date: formData.paymentDate,
           creditor_id: formData.creditorId || null,
-          payment_method: formData.paymentMethod || null,
+          bill_id: formData.billId || null,
+          bank_account_id: formData.createBankTransaction ? formData.bankAccountId : null,
+          payment_method: formData.createBankTransaction ? 'Bank Transfer' : 'Other',
           reference: formData.reference || null,
           notes: formData.notes || null
         })
@@ -280,8 +320,6 @@ export function EditPaymentPage() {
           .single();
           
         if (creditor) {
-          // If amount increased, increase outstanding amount
-          // If amount decreased, decrease outstanding amount
           const newOutstandingAmount = Math.max(0, Number(creditor.outstanding_amount) - amountDifference);
           
           await supabase
@@ -292,14 +330,17 @@ export function EditPaymentPage() {
       }
       
       // Handle bank transaction updates
-      // If the payment method is bank transfer and we have a bank account
-      if (formData.paymentMethod === 'Bank Transfer' && formData.bankAccountId) {
+      if (formData.createBankTransaction && formData.bankAccountId) {
         let description = `Payment made`;
         if (formData.creditorId) {
           const creditor = creditors.find(c => c.id === formData.creditorId);
           if (creditor) {
             description = `Payment to ${creditor.name}`;
           }
+        }
+
+        if (formData.billId) {
+          description += ` for bill ${bills.find(b => b.id === formData.billId)?.bill_number || ''}`;
         }
         
         // If there's an existing transaction, update it
@@ -406,6 +447,55 @@ export function EditPaymentPage() {
               </FormRow>
               
               <FormRow
+                label="To Creditor"
+                htmlFor="creditorId"
+              >
+                <div className="flex items-center">
+                  <User className="h-5 w-5 text-gray-400 mr-2" />
+                  <select
+                    id="creditorId"
+                    name="creditorId"
+                    value={formData.creditorId}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">-- Select Creditor (Optional) --</option>
+                    {creditors.map(creditor => (
+                      <option key={creditor.id} value={creditor.id}>
+                        {creditor.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </FormRow>
+
+              {formData.creditorId && bills.length > 0 && (
+                <FormRow
+                  label="For Bill"
+                  htmlFor="billId"
+                  hint="Selecting a bill will automatically set the amount"
+                >
+                  <div className="flex items-center">
+                    <FileText className="h-5 w-5 text-gray-400 mr-2" />
+                    <select
+                      id="billId"
+                      name="billId"
+                      value={formData.billId}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">-- Select Bill (Optional) --</option>
+                      {bills.map(bill => (
+                        <option key={bill.id} value={bill.id}>
+                          {bill.bill_number} (${Number(bill.total_amount).toFixed(2)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </FormRow>
+              )}
+              
+              <FormRow
                 label="Amount"
                 htmlFor="amount"
                 error={errors.amount}
@@ -448,52 +538,26 @@ export function EditPaymentPage() {
                   }`}
                 />
               </FormRow>
-              
-              <FormRow
-                label="To Creditor"
-                htmlFor="creditorId"
-              >
-                <select
-                  id="creditorId"
-                  name="creditorId"
-                  value={formData.creditorId}
-                  onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">-- Select Creditor (Optional) --</option>
-                  {creditors.map(creditor => (
-                    <option key={creditor.id} value={creditor.id}>
-                      {creditor.name}
-                    </option>
-                  ))}
-                </select>
-              </FormRow>
             </div>
             
             <div>
-              <FormRow
-                label="Payment Method"
-                htmlFor="paymentMethod"
-              >
-                <select
-                  id="paymentMethod"
-                  name="paymentMethod"
-                  value={formData.paymentMethod}
-                  onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">-- Select Payment Method --</option>
-                  <option value="Cash">Cash</option>
-                  <option value="Check">Check</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Credit Card">Credit Card</option>
-                  <option value="Debit Card">Debit Card</option>
-                  <option value="PayPal">PayPal</option>
-                  <option value="Other">Other</option>
-                </select>
-              </FormRow>
+              <div className="mb-6">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="createBankTransaction"
+                    checked={formData.createBankTransaction}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">Create bank transaction record</span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1 ml-6">
+                  This will automatically create a withdrawal transaction in the selected bank account
+                </p>
+              </div>
               
-              {formData.paymentMethod === 'Bank Transfer' && (
+              {formData.createBankTransaction && (
                 <FormRow
                   label="Withdraw from Account"
                   htmlFor="bankAccountId"
@@ -514,7 +578,10 @@ export function EditPaymentPage() {
                       <option value="">-- Select Account --</option>
                       {bankAccounts.map(account => (
                         <option key={account.id} value={account.id}>
-                          {account.name} ({account.account_type})
+                          {account.name} ({account.account_type}) - {new Intl.NumberFormat('en-IN', {
+                            style: 'currency',
+                            currency: 'INR'
+                          }).format(Number(account.current_balance))}
                         </option>
                       ))}
                     </select>

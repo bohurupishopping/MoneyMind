@@ -22,6 +22,11 @@ type PaymentWithCreditor = Payment & {
     id: string;
     name: string;
   } | null;
+  bank_accounts?: {
+    id: string;
+    name: string;
+    account_type: string;
+  } | null;
 };
 
 export function PaymentDetailPage() {
@@ -49,7 +54,7 @@ export function PaymentDetailPage() {
     try {
       const { data, error } = await supabase
         .from('payments')
-        .select('*, creditors(id, name)')
+        .select('*, creditors(id, name), bank_accounts(id, name, account_type)')
         .eq('id', id)
         .eq('business_id', selectedBusiness.id)
         .single();
@@ -174,7 +179,11 @@ export function PaymentDetailPage() {
                 
                 <DetailRow
                   label="Payment Method"
-                  value={payment.payment_method || 'Not specified'}
+                  value={payment.payment_method && (
+                    payment.payment_method === 'Bank Transfer' && payment.bank_accounts 
+                      ? `Bank Transfer - ${payment.bank_accounts.name} (${payment.bank_accounts.account_type})`
+                      : payment.payment_method
+                  )}
                   className="py-3 flex-1"
                 />
               </div>

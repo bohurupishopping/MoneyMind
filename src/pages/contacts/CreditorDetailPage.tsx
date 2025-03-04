@@ -8,7 +8,7 @@ import { Card } from '../../components/shared/Card';
 import { DetailRow } from '../../components/shared/DetailRow';
 import { DataTable } from '../../components/shared/DataTable';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { supabase, Creditor, Bill, Purchase } from '../../lib/supabase';
+import { supabase, Creditor, Bill, Purchase, Payment } from '../../lib/supabase';
 
 export function CreditorDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +18,7 @@ export function CreditorDetailPage() {
   const [creditor, setCreditor] = useState<Creditor | null>(null);
   const [bills, setBills] = useState<Bill[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -70,6 +71,25 @@ export function CreditorDetailPage() {
       if (purchaseError) throw purchaseError;
       
       setPurchases(purchaseData || []);
+
+      // Fetch related payments
+      const { data: paymentData, error: paymentError } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          bank_accounts (
+            id,
+            name,
+            account_type
+          )
+        `)
+        .eq('creditor_id', id)
+        .eq('business_id', selectedBusiness.id)
+        .order('payment_date', { ascending: false });
+        
+      if (paymentError) throw paymentError;
+      
+      setPayments(paymentData || []);
       
     } catch (err: any) {
       console.error('Error fetching creditor data:', err);
@@ -96,6 +116,15 @@ export function CreditorDetailPage() {
       alert('Failed to delete creditor. Please try again.');
     }
   };
+  
+  // Calculate total purchases amount
+  const totalPurchases = purchases.reduce((sum, purchase) => sum + Number(purchase.total_price), 0);
+  
+  // Calculate total payments made
+  const totalPayments = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+  
+  // Calculate actual outstanding balance
+  const outstandingBalance = totalPurchases - totalPayments;
   
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -196,20 +225,25 @@ export function CreditorDetailPage() {
           
           <div className="space-y-4">
             <div>
+              <p className="text-sm font-medium text-gray-500">Total Purchases</p>
+              <p className="text-lg font-semibold text-gray-800">{formatCurrency(totalPurchases)}</p>
+            </div>
+            
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Payments</p>
+              <p className="text-lg font-semibold text-green-600">{formatCurrency(totalPayments)}</p>
+            </div>
+            
+            <div>
               <p className="text-sm font-medium text-gray-500">Outstanding Balance</p>
               <p className="text-2xl font-bold text-red-600">
-                {formatCurrency(Number(creditor.outstanding_amount || 0))}
+                {formatCurrency(outstandingBalance)}
               </p>
             </div>
             
             <div>
               <p className="text-sm font-medium text-gray-500">Total Bills</p>
               <p className="text-lg font-semibold text-gray-800">{bills.length}</p>
-            </div>
-            
-            <div>
-              <p className="text-sm font-medium text-gray-500">Total Purchases</p>
-              <p className="text-lg font-semibold text-gray-800">{purchases.length}</p>
             </div>
           </div>
           
@@ -299,6 +333,58 @@ export function CreditorDetailPage() {
                     {item.status}
                   </span>
                 )
+              }
+            ]}
+          />
+        )}
+      </div>
+      
+      {/* Payments */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-medium text-gray-800">Payments</h2>
+          <button
+            onClick={() => navigate('/payments/new', { state: { creditorId: id } })}
+            className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800"
+          >
+            <Pencil className="h-4 w-4 mr-1" />
+            Record Payment
+          </button>
+        </div>
+        
+        {payments.length === 0 ? (
+          <p className="text-gray-500 italic">No payments found for this creditor.</p>
+        ) : (
+          <DataTable
+            data={payments}
+            keyExtractor={(item) => item.id}
+            pagination={true}
+            emptyMessage="No payments found"
+            onRowClick={(payment) => navigate(`/payments/${payment.id}`)}
+            columns={[
+              {
+                header: 'Payment #',
+                accessor: 'payment_number',
+                className: 'font-medium text-gray-900'
+              },
+              {
+                header: 'Date',
+                accessor: (item) => format(new Date(item.payment_date), 'MMM dd, yyyy')
+              },
+              {
+                header: 'Method',
+                accessor: (item) => item.payment_method === 'Bank Transfer' && item.bank_accounts
+                  ? `Bank Transfer - ${item.bank_accounts.name}`
+                  : item.payment_method
+              },
+              {
+                header: 'Reference',
+                accessor: 'reference'
+              },
+              {
+                header: 'Amount',
+                accessor: (item) => formatCurrency(Number(item.amount)),
+                className: 'font-medium text-green-600'
               }
             ]}
           />

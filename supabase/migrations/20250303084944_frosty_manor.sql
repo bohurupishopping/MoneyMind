@@ -7,6 +7,7 @@
       - `business_id` (uuid, foreign key to businesses)
       - `payment_number` (text, identifier)
       - `creditor_id` (uuid, foreign key to creditors, optional)
+      - `bank_account_id` (uuid, foreign key to bank_accounts, optional)
       - `amount` (decimal)
       - `payment_date` (date)
       - `payment_method` (text, optional)
@@ -27,6 +28,7 @@ CREATE TABLE IF NOT EXISTS payments (
   business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
   payment_number TEXT NOT NULL,
   creditor_id UUID REFERENCES creditors(id),
+  bank_account_id UUID REFERENCES bank_accounts(id),
   amount DECIMAL(12, 2) NOT NULL,
   payment_date DATE NOT NULL,
   payment_method TEXT,

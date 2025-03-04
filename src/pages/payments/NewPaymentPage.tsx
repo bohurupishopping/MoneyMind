@@ -248,6 +248,7 @@ export function NewPaymentPage() {
           amount: amount,
           payment_date: formData.paymentDate,
           creditor_id: formData.creditorId || null,
+          bank_account_id: formData.createBankTransaction ? formData.bankAccountId : null,
           payment_method: formData.createBankTransaction ? 'Bank Transfer' : 'Other',
           reference: formData.reference || null,
           notes: formData.notes || null

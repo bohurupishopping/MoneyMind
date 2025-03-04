@@ -4,6 +4,7 @@
   1. New Indexes
     - Add index on payment_receipts(debtor_id) for faster lookups
     - Add index on payments(creditor_id) for faster lookups
+    - Add index on payments(bank_account_id) for faster lookups
 
   2. Constraints
     - Ensure payment amounts are positive
@@ -13,6 +14,7 @@
 -- Add indexes for foreign keys to improve query performance
 CREATE INDEX IF NOT EXISTS payment_receipts_debtor_id_idx ON payment_receipts(debtor_id);
 CREATE INDEX IF NOT EXISTS payments_creditor_id_idx ON payments(creditor_id);
+CREATE INDEX IF NOT EXISTS payments_bank_account_id_idx ON payments(bank_account_id);
 
 -- Add check constraints to ensure amounts are positive
 ALTER TABLE payments 

@@ -79,6 +79,7 @@ export type Payment = {
   business_id: string;
   payment_number: string;
   creditor_id: string | null;
+  bank_account_id: string | null;
   amount: number;
   payment_date: string;
   payment_method: string | null;
