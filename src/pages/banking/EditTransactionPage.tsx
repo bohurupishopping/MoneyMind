@@ -15,6 +15,7 @@ import { supabase, Transaction, BankAccount } from '../../lib/supabase';
 type FormData = {
   type: 'deposit' | 'withdrawal' | 'transfer';
   accountId: string;
+  toAccountId: string;
   transactionNumber: string;
   amount: string;
   date: string;
@@ -32,6 +33,7 @@ export function EditTransactionPage() {
   const [formData, setFormData] = useState<FormData>({
     type: 'deposit',
     accountId: '',
+    toAccountId: '',
     transactionNumber: '',
     amount: '',
     date: '',
@@ -79,31 +81,56 @@ export function EditTransactionPage() {
     setFetchLoading(true);
     
     try {
-      const { data, error } = await supabase
+      // First fetch the main transaction
+      const { data: mainTransaction, error: mainError } = await supabase
         .from('transactions')
         .select('*')
         .eq('id', id)
         .eq('business_id', selectedBusiness.id)
         .single();
         
-      if (error) throw error;
+      if (mainError) throw mainError;
       
-      if (data) {
-        setOriginalTransaction(data);
-        setFormData({
-          type: data.type as 'deposit' | 'withdrawal' | 'transfer',
-          accountId: data.account_id,
-          transactionNumber: data.transaction_number,
-          amount: data.amount.toString(),
-          date: new Date(data.date).toISOString().split('T')[0],
-          description: data.description || '',
-          category: data.category || '',
-          reconciled: data.reconciled,
-          notes: data.notes || ''
-        });
-      } else {
+      if (!mainTransaction) {
         navigate('/banking/transactions');
+        return;
       }
+
+      // If it's a transfer, fetch the linked transaction
+      let linkedTransaction = null;
+      if (mainTransaction.type === 'transfer') {
+        if (mainTransaction.reference_id) {
+          // This is the destination transaction, fetch the source
+          const { data: sourceTransaction } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('id', mainTransaction.reference_id)
+            .single();
+          linkedTransaction = sourceTransaction;
+        } else {
+          // This is the source transaction, fetch the destination
+          const { data: destTransaction } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('reference_id', mainTransaction.id)
+            .single();
+          linkedTransaction = destTransaction;
+        }
+      }
+
+      setOriginalTransaction(mainTransaction);
+      setFormData({
+        type: mainTransaction.type as 'deposit' | 'withdrawal' | 'transfer',
+        accountId: mainTransaction.account_id,
+        toAccountId: linkedTransaction?.account_id || '',
+        transactionNumber: mainTransaction.transaction_number,
+        amount: mainTransaction.amount.toString(),
+        date: new Date(mainTransaction.date).toISOString().split('T')[0],
+        description: mainTransaction.description || '',
+        category: mainTransaction.category || '',
+        reconciled: mainTransaction.reconciled,
+        notes: mainTransaction.notes || ''
+      });
     } catch (err: any) {
       console.error('Error fetching transaction:', err);
       alert('Failed to load transaction. Please try again.');
@@ -134,6 +161,14 @@ export function EditTransactionPage() {
     
     if (!formData.accountId) {
       newErrors.accountId = 'Account is required';
+    }
+    
+    if (formData.type === 'transfer' && !formData.toAccountId) {
+      newErrors.toAccountId = 'Destination account is required';
+    }
+    
+    if (formData.type === 'transfer' && formData.accountId === formData.toAccountId) {
+      newErrors.toAccountId = 'Source and destination accounts must be different';
     }
     
     if (!formData.amount.trim()) {
@@ -185,47 +220,47 @@ export function EditTransactionPage() {
         
       if (updateError) throw updateError;
       
-      // Special handling for transfers if this transaction has a reference_id
-      if (originalTransaction.reference_id) {
-        // This is the second part of a transfer, update the first part too
-        const { error: referenceError } = await supabase
-          .from('transactions')
-          .update({
-            date: formData.date,
-            category: formData.category || null,
-            reconciled: formData.reconciled,
-            notes: formData.notes || null
-          })
-          .eq('id', originalTransaction.reference_id);
-          
-        if (referenceError) {
-          console.error('Error updating reference transaction:', referenceError);
-          // Continue anyway as the main transaction was updated successfully
+      // Handle transfer-specific updates
+      if (formData.type === 'transfer') {
+        if (originalTransaction.reference_id) {
+          // This is the second part of a transfer, update the first part
+          const { error: referenceError } = await supabase
+            .from('transactions')
+            .update({
+              account_id: formData.accountId, // Update source account if changed
+              date: formData.date,
+              amount, // Update amount to match
+              category: formData.category || null,
+              reconciled: formData.reconciled,
+              notes: formData.notes || null
+            })
+            .eq('id', originalTransaction.reference_id);
+            
+          if (referenceError) throw referenceError;
         }
-      }
-      
-      // If this transaction has a paired transfer transaction (it's the source of a transfer)
-      const { data: linkedTransactions, error: linkedError } = await supabase
-        .from('transactions')
-        .select('id')
-        .eq('reference_id', id);
         
-      if (!linkedError && linkedTransactions && linkedTransactions.length > 0) {
-        // Update the linked transactions with matching details
-        const { error: linkedUpdateError } = await supabase
+        // If this transaction has a paired transfer transaction (it's the source of a transfer)
+        const { data: linkedTransactions, error: linkedError } = await supabase
           .from('transactions')
-          .update({
-            amount,
-            date: formData.date,
-            category: formData.category || null,
-            reconciled: formData.reconciled,
-            notes: formData.notes || null
-          })
+          .select('id')
           .eq('reference_id', id);
           
-        if (linkedUpdateError) {
-          console.error('Error updating linked transaction:', linkedUpdateError);
-          // Continue anyway as the main transaction was updated successfully
+        if (!linkedError && linkedTransactions && linkedTransactions.length > 0) {
+          // Update the linked transaction with matching details
+          const { error: linkedUpdateError } = await supabase
+            .from('transactions')
+            .update({
+              account_id: formData.toAccountId, // Update destination account
+              amount,
+              date: formData.date,
+              description: `Transfer from ${accounts.find(a => a.id === formData.accountId)?.name || 'account'}`,
+              category: formData.category || null,
+              reconciled: formData.reconciled,
+              notes: formData.notes || null
+            })
+            .eq('reference_id', id);
+            
+          if (linkedUpdateError) throw linkedUpdateError;
         }
       }
       
@@ -353,6 +388,34 @@ export function EditTransactionPage() {
                   ))}
                 </select>
               </FormRow>
+              
+              {formData.type === 'transfer' && (
+                <FormRow
+                  label="To Account"
+                  htmlFor="toAccountId"
+                  error={errors.toAccountId}
+                  required
+                >
+                  <select
+                    id="toAccountId"
+                    name="toAccountId"
+                    value={formData.toAccountId}
+                    onChange={handleChange}
+                    className={`w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                      errors.toAccountId ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">-- Select Destination Account --</option>
+                    {accounts
+                      .filter(account => account.id !== formData.accountId)
+                      .map(account => (
+                        <option key={account.id} value={account.id}>
+                          {account.name}
+                        </option>
+                      ))}
+                  </select>
+                </FormRow>
+              )}
               
               <FormRow
                 label="Transaction Number"
