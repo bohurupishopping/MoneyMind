@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, Bot, User, Loader2, Send, ArrowRight } from 'lucide-react';
 import { Layout } from '../../components/Layout';
@@ -30,6 +30,70 @@ const SUGGESTIONS = [
   "Show recent transactions"
 ];
 
+// Memoized message component for better performance
+const Message = memo(({ message, formatTimestamp }: { 
+  message: { 
+    id: string;
+    role: string;
+    content: string;
+    created_at: string;
+  };
+  formatTimestamp: (timestamp: string) => string;
+}) => (
+  <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <MessageWrapper>
+      <Avatar isUser={message.role === 'user'}>
+        {message.role === 'user' ? (
+          <User className="w-3 h-3 sm:w-4 sm:h-4" />
+        ) : (
+          <Bot className="w-3 h-3 sm:w-4 sm:h-4" />
+        )}
+      </Avatar>
+      <div className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+        <MessageBubble isUser={message.role === 'user'}>
+          <div className="prose prose-sm max-w-none break-words">
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                li: ({ children }) => <li className="mb-1">{children}</li>,
+                code: ({ children }) => (
+                  <code className="bg-black/5 rounded px-1 py-0.5">{children}</code>
+                )
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        </MessageBubble>
+        <span className="text-[10px] sm:text-xs text-gray-400 mt-1 px-1 opacity-80">
+          {formatTimestamp(message.created_at)}
+        </span>
+      </div>
+    </MessageWrapper>
+  </div>
+));
+
+Message.displayName = 'Message';
+
+const LoadingMessage = memo(() => (
+  <MessageWrapper>
+    <Avatar isUser={false}>
+      <Bot className="w-3 h-3 sm:w-4 sm:h-4" />
+    </Avatar>
+    <MessageBubble isUser={false}>
+      <LoadingDots>
+        <Dot delay="0ms" />
+        <Dot delay="150ms" />
+        <Dot delay="300ms" />
+      </LoadingDots>
+    </MessageBubble>
+  </MessageWrapper>
+));
+
+LoadingMessage.displayName = 'LoadingMessage';
+
 export function TallyAIChatPage() {
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -42,15 +106,15 @@ export function TallyAIChatPage() {
     selectedBusiness
   } = useTallyAIChat();
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const formatTimestamp = (timestamp: string) => {
+  const formatTimestamp = useCallback((timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -63,13 +127,13 @@ export function TallyAIChatPage() {
     if (hours < 24) return `${hours}h ago`;
     if (days === 1) return 'Yesterday';
     return date.toLocaleDateString();
-  };
+  }, []);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
     await sendMessage(input);
-  };
+  }, [input, sendMessage]);
 
   return (
     <Layout>
@@ -121,44 +185,13 @@ export function TallyAIChatPage() {
                 </div>
               </EmptyStateContainer>
             ) : (
-              <div className="space-y-4 sm:space-y-6 w-full">
+              <div className="space-y-4 sm:space-y-6 w-full will-change-scroll">
                 {messages.map((message) => (
-                  <div
+                  <Message
                     key={message.id}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <MessageWrapper>
-                      <Avatar isUser={message.role === 'user'}>
-                        {message.role === 'user' ? (
-                          <User className="w-3 h-3 sm:w-4 sm:h-4" />
-                        ) : (
-                          <Bot className="w-3 h-3 sm:w-4 sm:h-4" />
-                        )}
-                      </Avatar>
-                      <div className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
-                        <MessageBubble isUser={message.role === 'user'}>
-                          <div className="prose prose-sm max-w-none overflow-hidden">
-                            <ReactMarkdown
-                              components={{
-                                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                                ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-                                ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-                                li: ({ children }) => <li className="mb-1">{children}</li>,
-                                code: ({ children }) => (
-                                  <code className="bg-black/5 rounded px-1 py-0.5">{children}</code>
-                                )
-                              }}
-                            >
-                              {message.content}
-                            </ReactMarkdown>
-                          </div>
-                        </MessageBubble>
-                        <span className="text-[10px] sm:text-xs text-gray-400 mt-1 px-1 opacity-80">
-                          {formatTimestamp(message.created_at)}
-                        </span>
-                      </div>
-                    </MessageWrapper>
-                  </div>
+                    message={message}
+                    formatTimestamp={formatTimestamp}
+                  />
                 ))}
 
                 {isLoading && (
@@ -183,11 +216,11 @@ export function TallyAIChatPage() {
           </MessagesContainer>
 
           <InputSection>
-            <form onSubmit={handleSendMessage}>
+            <form onSubmit={handleSendMessage} className="w-full">
               <InputWrapper>
                 <div className="flex-1">
                   <ChatInput
-                    value={input}
+                    value={input || ''}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
                     placeholder="Ask TallyAI"
                     onKeyDown={(e) => {
@@ -196,22 +229,20 @@ export function TallyAIChatPage() {
                         handleSendMessage(e);
                       }
                     }}
-                    className="w-full min-h-[40px] sm:min-h-[44px] max-h-[100px] sm:max-h-[120px] resize-none rounded-2xl bg-transparent border-0 px-3 sm:px-4 py-2 sm:py-3 focus:outline-none placeholder:text-gray-400 placeholder:opacity-70 focus:placeholder:opacity-50"
+                    className="w-full min-h-[40px] sm:min-h-[44px] max-h-[100px] resize-none rounded-2xl bg-transparent border-0 px-3 py-2 focus:outline-none placeholder:text-gray-400 placeholder:opacity-70 focus:placeholder:opacity-50"
+                    autoComplete="off"
                   />
                 </div>
 
                 <Button
                   type="submit"
                   disabled={isLoading || !input.trim()}
-                  className="h-9 sm:h-11 px-3 sm:px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 shadow-md"
+                  className="h-8 sm:h-9 aspect-square rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:scale-95 transition-all"
                 >
                   {isLoading ? (
                     <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
                   ) : (
-                    <>
-                      <span className="hidden sm:inline">Send</span>
                       <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </>
                   )}
                 </Button>
               </InputWrapper>

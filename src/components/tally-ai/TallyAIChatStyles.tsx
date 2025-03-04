@@ -17,12 +17,10 @@ interface SidebarButtonProps {
 }
 
 export const ChatContainer = tw.div`
-  relative 
-  h-screen
-  w-screen
-  fixed
-  top-0
-  left-0
+  flex
+  flex-col
+  min-h-screen
+  w-full
   bg-gradient-to-b from-white to-gray-50
   flex
   flex-col
@@ -52,8 +50,7 @@ export const ChatSection = tw.div`
   relative 
   flex 
   flex-col 
-  h-[calc(100%-3.5rem)]
-  sm:h-[calc(100%-4rem)]
+  flex-1
   flex-grow
   overflow-hidden
   w-full
@@ -62,20 +59,18 @@ export const ChatSection = tw.div`
 export const MessagesContainer = tw.div`
   flex-1 
   overflow-y-auto 
-  px-2 
-  sm:px-4 
+  px-3
+  sm:px-4
   md:px-6 
   py-4
   sm:py-6 
   space-y-4
   sm:space-y-6 
-  scrollbar-thin
-  scrollbar-thumb-gray-300
-  scrollbar-track-transparent
   bg-transparent
   w-full
   max-w-4xl
   mx-auto
+  -webkit-overflow-scrolling-touch
 `;
 
 export const MessageWrapper = tw.div`
@@ -126,39 +121,45 @@ export const MessageBubble = tw.div<MessageBubbleProps>`
 `;
 
 export const InputSection = tw.div`
-  border-t 
-  border-gray-200
-  bg-white/95
+  sticky
+  bottom-0
+  left-0
+  right-0
+  z-20
+  bg-transparent
   backdrop-blur-sm
-  px-2
-  sm:px-4
-  py-3
-  sm:py-4
-  md:px-6
-  shadow-[0_-1px_3px_rgba(0,0,0,0.05)]
+  p-4
+  pb-6
+  sm:pb-8
   w-full
+  pointer-events-none
+  transition-all
 `;
 
 export const InputWrapper = tw.div`
   max-w-4xl 
   mx-auto 
   relative 
-  flex 
-  items-end 
-  gap-2
+  flex
+  items-center
   sm:gap-3
   w-full
-  bg-white
-  rounded-2xl
-  border
-  border-gray-200
-  shadow-md
+  rounded-full
+  bg-white/95
+  border-2
+  border-gray-100
+  shadow-lg
   focus-within:ring-2
   focus-within:ring-indigo-500
   focus-within:border-indigo-500
-  p-2
-  sm:p-3
-  md:p-4
+  px-3
+  py-1.5
+  sm:px-4
+  sm:py-2
+  pointer-events-auto
+  hover:shadow-xl
+  transition-all
+  backdrop-blur-md
 `;
 
 export const SuggestionButton = tw.button`
