@@ -23,10 +23,11 @@ export const ChatContainer = tw.div`
   fixed
   top-0
   left-0
-  bg-white
+  bg-gradient-to-b from-white to-gray-50
   flex
   flex-col
   overflow-hidden
+  font-sans
 `;
 
 export const Header = tw.header`
@@ -40,9 +41,11 @@ export const Header = tw.header`
   sm:px-6 
   h-14
   sm:h-16 
-  bg-white
+  bg-white/95
+  backdrop-blur-sm
   border-b
   border-gray-200
+  shadow-sm
 `;
 
 export const ChatSection = tw.div`
@@ -58,74 +61,85 @@ export const ChatSection = tw.div`
 export const MessagesContainer = tw.div`
   flex-1 
   overflow-y-auto 
-  px-2 
-  sm:px-4 
-  md:px-6 
-  py-4
-  sm:py-6 
-  space-y-4
-  sm:space-y-6 
+  px-3 
+  sm:px-5 
+  md:px-8 
+  py-5
+  sm:py-8 
+  space-y-5
+  sm:space-y-7 
   scrollbar-thin
   scrollbar-thumb-gray-300
   scrollbar-track-transparent
-  bg-white
+  bg-transparent
 `;
 
 export const MessageWrapper = tw.div`
   flex 
   items-start 
-  gap-2
-  sm:gap-3 
+  gap-3
+  sm:gap-4 
   max-w-[90%]
   sm:max-w-[85%] 
   animate-fade-in-up
   w-full
+  transition-all
+  duration-300
+  hover:translate-y-[-2px]
 `;
 
 export const Avatar = tw.div<AvatarProps>`
   ${(p) => `
     flex-shrink-0 
-    w-7
-    h-7
-    sm:w-8 
-    sm:h-8 
+    w-8
+    h-8
+    sm:w-10 
+    sm:h-10 
     rounded-full 
     flex 
     items-center 
     justify-center 
     ${p.isUser 
-      ? 'bg-indigo-600 text-white' 
-      : 'bg-emerald-600 text-white'
+      ? 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white' 
+      : 'bg-gradient-to-br from-emerald-500 to-teal-700 text-white'
     }
-    shadow-sm
+    shadow-md
+    ring-2
+    ring-white
+    transition-transform
+    duration-300
+    hover:scale-110
   `}
 `;
 
 export const MessageBubble = tw.div<MessageBubbleProps>`
   ${(p) => `
     rounded-2xl 
-    px-3
-    sm:px-4 
-    py-2
-    sm:py-2.5 
+    px-4
+    sm:px-5 
+    py-3
+    sm:py-3.5 
     ${p.isUser
-      ? 'bg-indigo-600 text-white shadow-sm'
-      : 'bg-gray-100 text-gray-900'
+      ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
+      : 'bg-white text-gray-800 border border-gray-100 shadow-sm'
     }
     max-w-full
     overflow-hidden
+    ${p.isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'}
   `}
 `;
 
 export const InputSection = tw.div`
   border-t 
   border-gray-200
-  bg-white
-  px-2
-  sm:px-4
-  py-3
-  sm:py-4
-  md:px-6
+  bg-white/95
+  backdrop-blur-sm
+  px-3
+  sm:px-5
+  py-4
+  sm:py-5
+  md:px-8
+  shadow-[0_-1px_3px_rgba(0,0,0,0.05)]
 `;
 
 export const InputWrapper = tw.div`
@@ -134,36 +148,39 @@ export const InputWrapper = tw.div`
   relative 
   flex 
   items-end 
-  gap-2
+  gap-3
   w-full
   bg-white
   rounded-2xl
   border
   border-gray-200
-  shadow-sm
+  shadow-md
   focus-within:ring-2
   focus-within:ring-indigo-500
   focus-within:border-indigo-500
   transition-all
-  p-2
-  sm:p-3
+  duration-200
+  p-3
+  sm:p-4
+  hover:border-indigo-300
 `;
 
 export const SuggestionButton = tw.button`
   group 
-  p-3
-  sm:p-4 
+  p-4
+  sm:p-5 
   text-left 
   rounded-xl 
   border 
   border-gray-200
   bg-white
   hover:border-indigo-300
-  hover:bg-indigo-50
+  hover:bg-indigo-50/70
   transition-all
-  duration-200
+  duration-300
   shadow-sm
-  hover:shadow
+  hover:shadow-md
+  hover:translate-y-[-2px]
 `;
 
 export const EmptyStateContainer = tw.div`
@@ -173,45 +190,53 @@ export const EmptyStateContainer = tw.div`
   justify-center 
   min-h-full 
   text-center 
-  p-4 
-  md:p-8
-  max-w-2xl
+  p-5 
+  md:p-10
+  max-w-3xl
   mx-auto
   w-full
+  animate-fade-in
 `;
 
 export const EmptyStateIcon = tw.div`
-  w-14
-  h-14
-  sm:w-16 
-  sm:h-16 
+  w-16
+  h-16
+  sm:w-20 
+  sm:h-20 
   rounded-full 
-  bg-indigo-100
+  bg-gradient-to-br from-indigo-100 to-indigo-200
   flex
   items-center
   justify-center
-  mb-6
+  mb-8
   transition-transform
-  hover:scale-105
+  duration-500
+  hover:scale-110
+  shadow-md
+  ring-4
+  ring-white
+  animate-bounce-slow
 `;
 
 export const LoadingDots = tw.div`
   flex 
   items-center 
-  space-x-1.5
-  py-1
+  space-x-2
+  py-2
+  px-1
 `;
 
 export const Dot = tw.div<DotProps>`
   ${(p) => `
-    w-1.5
-    h-1.5
-    sm:w-2 
-    sm:h-2 
-    bg-gray-400
+    w-2
+    h-2
+    sm:w-2.5 
+    sm:h-2.5 
+    bg-gradient-to-r from-indigo-400 to-indigo-600
     rounded-full
     animate-bounce
     animation-delay-${p.delay}
+    shadow-sm
   `}
 `; 
 
@@ -220,28 +245,33 @@ export const SidebarButton = tw.button<SidebarButtonProps>`
     w-full
     flex
     items-center
-    gap-2
-    px-3
-    py-2
-    rounded-lg
+    gap-3
+    px-4
+    py-3
+    rounded-xl
     text-sm
     font-medium
-    transition-colors
+    transition-all
+    duration-200
     ${p.active 
-      ? 'bg-indigo-100 text-indigo-700'
+      ? 'bg-indigo-100 text-indigo-700 shadow-sm'
       : 'text-gray-700 hover:bg-gray-100'}
+    hover:translate-x-1
   `}
 `;
 
 export const ChatThreadItem = tw.div`
   flex
   items-center
-  gap-2
-  p-2
-  rounded-lg
+  gap-3
+  p-3
+  rounded-xl
   hover:bg-gray-100
   cursor-pointer
-  transition-colors
+  transition-all
+  duration-200
   text-sm
   text-gray-700
+  hover:shadow-sm
+  hover:translate-x-1
 `;
