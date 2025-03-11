@@ -1,9 +1,8 @@
-import React, { useRef, useEffect, memo, useCallback } from 'react';
+import React, { useRef, useEffect, memo, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, Bot, User } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { Button } from '../../components/ui/button';
-import { ChatInput } from '../../components/ui/chat-input';
 import ReactMarkdown from 'react-markdown';
 import { useTallyAIChat } from '../../hooks/useTallyAIChat';
 import {
@@ -22,6 +21,7 @@ import {
 } from '../../components/tally-ai/TallyAIChatStyles';
 
 import { FloatingChatInput } from '../../components/tally-ai/FloatingChatInput';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 
 const SUGGESTIONS = [
   "Show me a summary of my business finances",
@@ -40,7 +40,7 @@ const Message = memo(({ message, formatTimestamp }: {
   };
   formatTimestamp: (timestamp: string) => string;
 }) => (
-  <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+  <div className="flex w-full animate-fade-in" style={{ justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start' }}>
     <MessageWrapper>
       <Avatar isUser={message.role === 'user'}>
         {message.role === 'user' ? (
@@ -49,7 +49,7 @@ const Message = memo(({ message, formatTimestamp }: {
           <Bot className="w-3 h-3 sm:w-4 sm:h-4" />
         )}
       </Avatar>
-      <div className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+      <div className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'} max-w-[85vw] sm:max-w-[75vw] md:max-w-[65vw]`}>
         <MessageBubble isUser={message.role === 'user'}>
           <div className="prose prose-sm max-w-none break-words">
             <ReactMarkdown
@@ -97,6 +97,7 @@ LoadingMessage.displayName = 'LoadingMessage';
 export function TallyAIChatPage() {
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const parentRef = useRef<HTMLDivElement>(null);
   const {
     messages,
     isLoading,
@@ -107,12 +108,14 @@ export function TallyAIChatPage() {
   } = useTallyAIChat();
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   const formatTimestamp = useCallback((timestamp: string) => {
     const date = new Date(timestamp);
@@ -134,6 +137,40 @@ export function TallyAIChatPage() {
     if (!input.trim()) return;
     await sendMessage(input);
   }, [input, sendMessage]);
+
+  const rowVirtualizer = useWindowVirtualizer({
+    count: messages.length,
+    estimateSize: () => 100,
+    overscan: 5,
+    scrollingDelay: 50,
+  });
+
+  const virtualMessages = useMemo(() => {
+    if (messages.length === 0) return null;
+
+    return rowVirtualizer.getVirtualItems().map((virtualRow) => {
+      const message = messages[virtualRow.index];
+      return (
+        <div
+          key={message.id}
+          data-index={virtualRow.index}
+          ref={rowVirtualizer.measureElement}
+          style={{
+            transform: `translateY(${virtualRow.start}px)`,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+          }}
+        >
+          <Message
+            message={message}
+            formatTimestamp={formatTimestamp}
+          />
+        </div>
+      );
+    });
+  }, [messages, rowVirtualizer, formatTimestamp]);
 
   return (
     <Layout>
@@ -161,7 +198,7 @@ export function TallyAIChatPage() {
         </Header>
 
         <ChatSection>
-          <MessagesContainer>
+          <MessagesContainer ref={parentRef}>
             {messages.length === 0 ? (
               <EmptyStateContainer>
                 <EmptyStateIcon>
@@ -185,31 +222,12 @@ export function TallyAIChatPage() {
                 </div>
               </EmptyStateContainer>
             ) : (
-              <div className="space-y-4 sm:space-y-6 w-full will-change-scroll pb-24 sm:pb-28">
-                {messages.map((message) => (
-                  <Message
-                    key={message.id}
-                    message={message}
-                    formatTimestamp={formatTimestamp}
-                  />
-                ))}
-
-                {isLoading && (
-                  <div>
-                    <MessageWrapper>
-                      <Avatar isUser={false}>
-                        <Bot className="w-3 h-3 sm:w-4 sm:h-4" />
-                      </Avatar>
-                      <MessageBubble isUser={false}>
-                        <LoadingDots>
-                          <Dot delay="0ms" />
-                          <Dot delay="150ms" />
-                          <Dot delay="300ms" />
-                        </LoadingDots>
-                      </MessageBubble>
-                    </MessageWrapper>
-                  </div>
-                )}
+              <div 
+                className="relative w-full will-change-transform"
+                style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+              >
+                {virtualMessages}
+                {isLoading && <LoadingMessage />}
                 <div ref={messagesEndRef} className="h-4" />
               </div>
             )}

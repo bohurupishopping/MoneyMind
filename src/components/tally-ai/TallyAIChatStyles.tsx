@@ -125,16 +125,15 @@ export const InputSection = tw.div`
   left-0
   right-0
   z-50
-  bg-gradient-to-t from-white/95 via-white/80 to-transparent
-  px-4
-  pb-6
-  pt-4
-  sm:pb-8
+  px-3
+  sm:px-4
+  pb-4
+  sm:pb-6
+  pt-2
   sm:pt-4
   w-full
   pointer-events-none
   transition-all
-  backdrop-blur-sm
 `;
 
 export const InputWrapper = tw.div`
@@ -147,21 +146,21 @@ export const InputWrapper = tw.div`
   sm:gap-3
   w-full
   rounded-full
-  bg-white/95
-  border-2
-  border-gray-100
+  bg-white
+  border
+  border-gray-200/80
   shadow-lg
   focus-within:ring-2
-  focus-within:ring-indigo-500
-  focus-within:border-indigo-500
-  px-3.5
-  py-1.5
+  focus-within:ring-indigo-500/80
+  focus-within:border-indigo-500/80
+  px-3
   sm:px-4
+  py-1.5
   sm:py-2
   pointer-events-auto
   hover:shadow-xl
   transition-all
-  backdrop-blur-md
+  backdrop-blur-sm
 `;
 
 export const SuggestionButton = tw.button`
