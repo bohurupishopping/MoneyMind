@@ -66,7 +66,7 @@ const Message = memo(({ message, formatTimestamp }: {
         "flex-shrink-0 rounded-full w-8 h-8 sm:w-10 sm:h-10",
         message.role === 'user' 
           ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white' 
-          : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700'
+          : 'bg-gradient-to-br from-gray-100 to-gray-200'
       )}
     >
       {message.role === 'user' ? (
@@ -85,10 +85,10 @@ const Message = memo(({ message, formatTimestamp }: {
           "rounded-2xl px-4 py-2 sm:px-5 sm:py-3",
           message.role === 'user' 
             ? 'bg-indigo-600 text-white' 
-            : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+            : 'bg-gray-100 text-gray-900'
         )}
       >
-        <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+        <div className="prose prose-sm max-w-none break-words">
           <ReactMarkdown
             components={{
               p: ({ children }) => <p className="mb-3 last:mb-0 text-sm sm:text-base">{children}</p>,
@@ -101,7 +101,7 @@ const Message = memo(({ message, formatTimestamp }: {
                     "rounded-lg p-3 text-xs sm:text-sm font-mono",
                     message.role === 'user' 
                       ? 'bg-indigo-700/50' 
-                      : 'bg-gray-200 dark:bg-gray-700'
+                      : 'bg-gray-200'
                   )}>
                     <code className={className} {...props}>
                       {children}
@@ -113,7 +113,7 @@ const Message = memo(({ message, formatTimestamp }: {
                       "rounded px-1.5 py-0.5 text-xs sm:text-sm font-mono",
                       message.role === 'user' 
                         ? 'bg-indigo-700/50' 
-                        : 'bg-gray-200 dark:bg-gray-700'
+                        : 'bg-gray-200'
                     )} 
                     {...props}
                   >
@@ -127,10 +127,7 @@ const Message = memo(({ message, formatTimestamp }: {
           </ReactMarkdown>
         </div>
       </MessageBubble>
-      <span className={cn(
-        "text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 px-2",
-        message.role === 'user' ? 'text-right' : 'text-left'
-      )}>
+      <span className="text-[10px] sm:text-xs text-gray-500 px-2">
         {formatTimestamp(message.created_at)}
       </span>
     </div>
@@ -148,18 +145,18 @@ const LoadingMessage = memo(() => (
   >
     <Avatar 
       isUser={false}
-      className="flex-shrink-0 rounded-full w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700"
+      className="flex-shrink-0 rounded-full w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-gray-100 to-gray-200"
     >
       <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
     </Avatar>
     <MessageBubble 
       isUser={false}
-      className="rounded-2xl px-4 py-2 sm:px-5 sm:py-3 bg-gray-100 dark:bg-gray-800"
+      className="rounded-2xl px-4 py-2 sm:px-5 sm:py-3 bg-gray-100"
     >
       <LoadingDots className="flex items-center space-x-1 sm:space-x-2">
-        <Dot delay="0ms" className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-gray-400 dark:bg-gray-500 rounded-full" />
-        <Dot delay="150ms" className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-gray-400 dark:bg-gray-500 rounded-full" />
-        <Dot delay="300ms" className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-gray-400 dark:bg-gray-500 rounded-full" />
+        <Dot delay="0ms" className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-gray-400 rounded-full" />
+        <Dot delay="150ms" className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-gray-400 rounded-full" />
+        <Dot delay="300ms" className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-gray-400 rounded-full" />
       </LoadingDots>
     </MessageBubble>
   </MotionDiv>
@@ -265,15 +262,15 @@ export function TallyAIChatPage() {
   return (
     <Layout>
       <ChatContainer>
-        <Header className="sticky top-0 z-10 backdrop-blur-lg bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800">
+        <Header className="sticky top-0 z-10 backdrop-blur-lg bg-gray-50/80 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/30 dark:to-indigo-800/30 shadow-lg ring-2 ring-white/80 dark:ring-gray-900/80">
-              <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 shadow-lg ring-2 ring-gray-50">
+              <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">TallyAI</h1>
+              <h1 className="text-base sm:text-lg font-semibold text-gray-900 tracking-tight">TallyAI</h1>
               {selectedBusiness && (
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px] sm:max-w-[200px] opacity-80">{selectedBusiness.name}</p>
+                <p className="text-xs sm:text-sm text-gray-500 truncate max-w-[150px] sm:max-w-[200px] opacity-80">{selectedBusiness.name}</p>
               )}
             </div>
           </div>
@@ -282,7 +279,7 @@ export function TallyAIChatPage() {
               <ActionButton 
                 onClick={handleClearChat} 
                 title="New Chat"
-                className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="hover:bg-gray-100 transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
               </ActionButton>
@@ -290,14 +287,14 @@ export function TallyAIChatPage() {
             <ActionButton 
               onClick={() => navigate('/tally-ai/settings')} 
               title="Settings"
-              className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="hover:bg-gray-100 transition-colors"
             >
               <Settings className="w-4 h-4" />
             </ActionButton>
           </div>
         </Header>
 
-        <ChatSection className="flex-1 overflow-hidden relative">
+        <ChatSection>
           <MessagesContainer 
             ref={parentRef}
             className="h-full overflow-y-auto px-4 py-6 space-y-6"
@@ -311,12 +308,12 @@ export function TallyAIChatPage() {
                   className="max-w-2xl mx-auto"
                 >
                   <EmptyStateIcon className="mb-6">
-                    <Bot className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-600 dark:text-indigo-400" />
+                    <Bot className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-600" />
                   </EmptyStateIcon>
-                  <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-3">
                     Welcome to TallyAI
                   </h2>
-                  <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-8 sm:mb-10 text-sm sm:text-base">
+                  <p className="text-gray-500 max-w-md mx-auto mb-8 sm:mb-10 text-sm sm:text-base">
                     I'm your AI assistant for financial analysis and business insights. How can I help you today?
                   </p>
                   <SuggestionGrid className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
@@ -329,9 +326,9 @@ export function TallyAIChatPage() {
                       >
                         <SuggestionButton
                           onClick={() => setInput(suggestion)}
-                          className="w-full p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors text-left"
+                          className="w-full p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
                         >
-                          <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
+                          <p className="text-sm sm:text-base font-medium text-gray-900">
                             {suggestion}
                           </p>
                         </SuggestionButton>
@@ -353,7 +350,7 @@ export function TallyAIChatPage() {
           </MessagesContainer>
         </ChatSection>
         
-        <div className="sticky bottom-0 z-10 bg-gradient-to-t from-white dark:from-gray-900 pt-4 pb-6">
+        <div className="sticky bottom-0 z-10 bg-gradient-to-t from-gray-50 pt-4 pb-6">
           <FloatingChatInput
             input={input}
             isLoading={isLoading}

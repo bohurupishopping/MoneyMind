@@ -22,8 +22,6 @@ export const ChatContainer = tw.div`
   flex-col
   min-h-[100dvh]
   w-full
-  bg-white
-  dark:bg-gray-900
   overflow-hidden
   font-sans
   relative
@@ -40,11 +38,8 @@ export const Header = tw.header`
   sm:px-6 
   h-14
   sm:h-16 
-  bg-white
-  dark:bg-gray-900
   border-b
   border-gray-200
-  dark:border-gray-800
   shadow-sm
 `;
 
@@ -104,8 +99,7 @@ export const Avatar = tw.div<AvatarProps>`
     }
     shadow-md
     ring-2
-    ring-white
-    dark:ring-gray-900
+    ring-gray-50
   `}
 `;
 
@@ -118,7 +112,7 @@ export const MessageBubble = tw.div<MessageBubbleProps>`
     sm:py-3.5 
     ${p.isUser
       ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
-      : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700 shadow-sm'
+      : 'bg-gray-100 text-gray-800 border border-gray-100 shadow-sm'
     }
     max-w-full
     overflow-hidden
@@ -153,11 +147,9 @@ export const InputWrapper = tw.div`
   sm:gap-3
   w-full
   rounded-full
-  bg-white/95
-  dark:bg-gray-800/95
+  bg-gray-50/95
   border
   border-gray-200/80
-  dark:border-gray-700/80
   shadow-lg
   focus-within:ring-2
   focus-within:ring-indigo-500/80
@@ -178,12 +170,9 @@ export const SuggestionButton = tw.button`
   rounded-xl 
   border 
   border-gray-200
-  dark:border-gray-700
-  bg-white
-  dark:bg-gray-800
+  bg-gray-50
   shadow-sm
-  hover:bg-gray-50
-  dark:hover:bg-gray-700
+  hover:bg-gray-100
   transition-all
   duration-200
   hover:shadow-md
@@ -213,15 +202,13 @@ export const EmptyStateIcon = tw.div`
   sm:h-16 
   rounded-full 
   bg-gradient-to-br from-indigo-100 to-indigo-200
-  dark:from-indigo-900/30 dark:to-indigo-800/30
   flex
   items-center
   justify-center
   mb-6
   shadow-md
   ring-4
-  ring-white
-  dark:ring-gray-900
+  ring-gray-50
 `;
 
 export const LoadingDots = tw.div`
@@ -239,7 +226,6 @@ export const Dot = tw.div<DotProps>`
     sm:w-2.5 
     sm:h-2.5 
     bg-gradient-to-r from-indigo-400 to-indigo-600
-    dark:from-indigo-500 dark:to-indigo-700
     rounded-full
     animate-bounce
     animation-delay-${p.delay}
@@ -259,8 +245,8 @@ export const SidebarButton = tw.button<SidebarButtonProps>`
     text-sm
     font-medium
     ${p.active 
-      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 shadow-sm'
-      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}
+      ? 'bg-indigo-100 text-indigo-700 shadow-sm'
+      : 'text-gray-700 hover:bg-gray-100'}
     transition-all
     duration-200
   `}
@@ -273,16 +259,13 @@ export const ChatThreadItem = tw.div`
   p-3
   rounded-xl
   hover:bg-gray-100
-  dark:hover:bg-gray-800
   cursor-pointer
   text-sm
   text-gray-700
-  dark:text-gray-300
   transition-all
   duration-200
 `;
 
-// New components for enhanced UI
 export const SuggestionGrid = tw.div`
   grid
   grid-cols-1
@@ -306,7 +289,6 @@ export const WelcomeIconContainer = tw.div`
   h-16
   mx-auto
   bg-indigo-50
-  dark:bg-indigo-900/20
   rounded-2xl
   flex
   items-center
@@ -320,12 +302,9 @@ export const ActionButton = tw.button`
   p-2
   rounded-full
   text-gray-600
-  dark:text-gray-400
   hover:bg-gray-100
-  dark:hover:bg-gray-800
   transition-all
   duration-200
 `;
 
-// Animated components
 export const MotionDiv = motion.div;
