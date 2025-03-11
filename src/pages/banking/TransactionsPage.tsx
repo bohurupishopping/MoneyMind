@@ -7,7 +7,8 @@ import {
   RefreshCw, 
   Plus, 
   Filter,
-  CreditCard
+  CreditCard,
+  Download
 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { PageHeader } from '../../components/shared/PageHeader';
@@ -33,6 +34,61 @@ type FilterState = {
   reconciled: boolean | null;
 };
 
+// Add interface for IE Navigator
+interface IENavigator extends Navigator {
+  msSaveBlob?: (blob: Blob, filename: string) => boolean;
+}
+
+// Helper function to format transaction data for CSV
+function formatTransactionForCSV(transaction: TransactionWithDetails) {
+  return {
+    'Date': format(new Date(transaction.date), 'yyyy-MM-dd'),
+    'Transaction Number': transaction.transaction_number,
+    'Account': transaction.bank_accounts?.name || 'Unknown',
+    'Type': transaction.type,
+    'Description': transaction.description,
+    'Category': transaction.category,
+    'Amount': Number(transaction.amount).toFixed(2),
+    'Reconciled': transaction.reconciled ? 'Yes' : 'No',
+    'Notes': transaction.notes || 'N/A',
+    'Created At': format(new Date(transaction.created_at), 'yyyy-MM-dd HH:mm:ss')
+  };
+}
+
+// Helper function to convert data to CSV
+function convertToCSV(data: any[]) {
+  if (data.length === 0) return '';
+  
+  const headers = Object.keys(data[0]);
+  const rows = data.map(row => 
+    headers.map(header => {
+      const cell = row[header]?.toString() || '';
+      // Escape quotes and wrap in quotes if contains comma
+      return cell.includes(',') ? `"${cell.replace(/"/g, '""')}"` : cell;
+    }).join(',')
+  );
+  
+  return [headers.join(','), ...rows].join('\n');
+}
+
+// Update the downloadCSV function
+function downloadCSV(csv: string, filename: string) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  
+  // Type assertion for IE compatibility
+  const nav = navigator as IENavigator;
+  if (nav.msSaveBlob) {
+    nav.msSaveBlob(blob, filename);
+  } else {
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
 export function TransactionsPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,6 +107,7 @@ export function TransactionsPage() {
     toDate: null,
     reconciled: null
   });
+  const [exporting, setExporting] = useState(false);
   
   useEffect(() => {
     if (selectedBusiness) {
@@ -65,7 +122,7 @@ export function TransactionsPage() {
     try {
       const { data, error } = await supabase
         .from('bank_accounts')
-        .select('id, name')
+        .select('id, name, business_id, account_number, account_type, opening_balance, current_balance, created_at, updated_at')
         .eq('business_id', selectedBusiness.id)
         .order('name');
         
@@ -177,6 +234,60 @@ export function TransactionsPage() {
     }).format(amount);
   };
   
+  const handleExport = async () => {
+    if (!selectedBusiness || exporting) return;
+    
+    setExporting(true);
+    
+    try {
+      // Build query with current filters
+      let query = supabase
+        .from('transactions')
+        .select('*, bank_accounts(name)')
+        .eq('business_id', selectedBusiness.id);
+      
+      // Apply filters
+      if (filters.accountId) {
+        query = query.eq('account_id', filters.accountId);
+      }
+      
+      if (filters.type) {
+        query = query.eq('type', filters.type);
+      }
+      
+      if (filters.fromDate) {
+        query = query.gte('date', filters.fromDate);
+      }
+      
+      if (filters.toDate) {
+        query = query.lte('date', filters.toDate);
+      }
+      
+      if (filters.reconciled !== null) {
+        query = query.eq('reconciled', filters.reconciled);
+      }
+      
+      const { data, error } = await query.order('date', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const formattedData = data.map(formatTransactionForCSV);
+        const csv = convertToCSV(formattedData);
+        const filename = `transactions_export_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`;
+        
+        downloadCSV(csv, filename);
+      } else {
+        alert('No transactions to export');
+      }
+    } catch (err: any) {
+      console.error('Error exporting transactions:', err);
+      alert('Failed to export transactions. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+  
   if (loading && transactions.length === 0) {
     return (
       <Layout>
@@ -199,13 +310,35 @@ export function TransactionsPage() {
 
   return (
     <Layout>
-      <PageHeader
-        title="Transactions"
-        subtitle="Manage and track all your financial transactions"
-        actionLabel="New Transaction"
-        actionLink="/banking/transactions/new"
-        actionIcon={<Plus className="h-4 w-4 mr-1" />}
-      />
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Transactions</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Manage and track all your financial transactions
+          </p>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          {transactions.length > 0 && (
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {exporting ? 'Exporting...' : 'Export CSV'}
+            </button>
+          )}
+          
+          <button
+            onClick={() => navigate('/banking/transactions/new')}
+            className="flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Transaction
+          </button>
+        </div>
+      </div>
       
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-800">
@@ -385,10 +518,11 @@ export function TransactionsPage() {
             },
             {
               header: 'Amount',
-              accessor: (item) => formatCurrency(Number(item.amount)),
-              className: (item) => `font-medium ${
-                item.type === 'deposit' ? 'text-green-600' : 'text-red-600'
-              }`
+              accessor: (item: TransactionWithDetails) => {
+                const amount = formatCurrency(Number(item.amount));
+                const colorClass = item.type === 'deposit' ? 'text-green-600' : 'text-red-600';
+                return <span className={`font-medium ${colorClass}`}>{amount}</span>;
+              }
             },
             {
               header: 'Reconciled',

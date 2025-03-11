@@ -8,7 +8,8 @@ import {
   AlertCircle,
   Calendar,
   Pencil,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { PageHeader } from '../../components/shared/PageHeader';
@@ -23,6 +24,60 @@ type TransactionWithType = Transaction & {
   typeClass: string;
 };
 
+// Add interface for IE Navigator
+interface IENavigator extends Navigator {
+  msSaveBlob?: (blob: Blob, filename: string) => boolean;
+}
+
+// Helper function to format transaction data for CSV
+function formatTransactionForCSV(transaction: TransactionWithType) {
+  return {
+    'Date': format(new Date(transaction.date), 'yyyy-MM-dd'),
+    'Transaction Number': transaction.transaction_number,
+    'Type': transaction.type,
+    'Description': transaction.description,
+    'Category': transaction.category,
+    'Amount': Number(transaction.amount).toFixed(2),
+    'Reconciled': transaction.reconciled ? 'Yes' : 'No',
+    'Notes': transaction.notes || 'N/A',
+    'Created At': format(new Date(transaction.created_at), 'yyyy-MM-dd HH:mm:ss')
+  };
+}
+
+// Helper function to convert data to CSV
+function convertToCSV(data: any[]) {
+  if (data.length === 0) return '';
+  
+  const headers = Object.keys(data[0]);
+  const rows = data.map(row => 
+    headers.map(header => {
+      const cell = row[header]?.toString() || '';
+      // Escape quotes and wrap in quotes if contains comma
+      return cell.includes(',') ? `"${cell.replace(/"/g, '""')}"` : cell;
+    }).join(',')
+  );
+  
+  return [headers.join(','), ...rows].join('\n');
+}
+
+// Update the downloadCSV function
+function downloadCSV(csv: string, filename: string) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  
+  // Type assertion for IE compatibility
+  const nav = navigator as IENavigator;
+  if (nav.msSaveBlob) {
+    nav.msSaveBlob(blob, filename);
+  } else {
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
 export function BankAccountDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -32,6 +87,7 @@ export function BankAccountDetailPage() {
   const [transactions, setTransactions] = useState<TransactionWithType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   
   useEffect(() => {
     if (selectedBusiness && id) {
@@ -128,6 +184,38 @@ export function BankAccountDetailPage() {
         return <CreditCard className="h-5 w-5 text-yellow-500" />;
       default:
         return <CreditCard className="h-5 w-5 text-gray-500" />;
+    }
+  };
+  
+  const handleExport = async () => {
+    if (!selectedBusiness || !id || exporting) return;
+    
+    setExporting(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('account_id', id)
+        .eq('business_id', selectedBusiness.id)
+        .order('date', { ascending: false });
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const formattedData = data.map(formatTransactionForCSV);
+        const csv = convertToCSV(formattedData);
+        const filename = `account_transactions_${account?.name.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`;
+        
+        downloadCSV(csv, filename);
+      } else {
+        alert('No transactions to export');
+      }
+    } catch (err: any) {
+      console.error('Error exporting transactions:', err);
+      alert('Failed to export transactions. Please try again.');
+    } finally {
+      setExporting(false);
     }
   };
   
@@ -304,12 +392,24 @@ export function BankAccountDetailPage() {
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-medium text-gray-800">Recent Transactions</h2>
-          <button
-            onClick={() => navigate('/banking/transactions', { state: { accountId: id } })}
-            className="text-sm text-indigo-600 hover:text-indigo-800"
-          >
-            View All Transactions
-          </button>
+          <div className="flex items-center space-x-3">
+            {transactions.length > 0 && (
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {exporting ? 'Exporting...' : 'Export CSV'}
+              </button>
+            )}
+            <button
+              onClick={() => navigate('/banking/transactions', { state: { accountId: id } })}
+              className="text-sm text-indigo-600 hover:text-indigo-800"
+            >
+              View All Transactions
+            </button>
+          </div>
         </div>
         
         {transactions.length === 0 ? (
@@ -356,8 +456,11 @@ export function BankAccountDetailPage() {
               },
               {
                 header: 'Amount',
-                accessor: (transaction) => formatCurrency(Number(transaction.amount)),
-                className: (transaction) => `font-medium ${transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`
+                accessor: (transaction: TransactionWithType) => {
+                  const amount = formatCurrency(Number(transaction.amount));
+                  const colorClass = transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600';
+                  return <span className={`font-medium ${colorClass}`}>{amount}</span>;
+                }
               },
               {
                 header: 'Reconciled',
