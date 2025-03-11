@@ -191,12 +191,20 @@ export function TallyAIChatPage() {
 
   const scrollToBottom = useCallback(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      // Use requestAnimationFrame to ensure DOM updates are complete
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ 
+          behavior: messages.length <= 1 ? 'auto' : 'smooth',
+          block: 'end'
+        });
+      });
     }
-  }, []);
+  }, [messages.length]);
 
+  // Improved scroll handling
   useEffect(() => {
-    scrollToBottom();
+    const timeoutId = setTimeout(scrollToBottom, 100); // Add a small delay to ensure content is rendered
+    return () => clearTimeout(timeoutId);
   }, [messages, scrollToBottom]);
 
   const formatTimestamp = useCallback((timestamp: string) => {
@@ -294,29 +302,29 @@ export function TallyAIChatPage() {
           </div>
         </Header>
 
-        <ChatSection>
+        <ChatSection className="flex-1 h-[calc(100vh-4rem)] overflow-hidden">
           <MessagesContainer 
             ref={parentRef}
-            className="h-full overflow-y-auto px-4 py-6 space-y-6"
+            className="h-full overflow-y-auto px-4 py-4 space-y-4"
           >
             {messages.length === 0 ? (
-              <EmptyStateContainer className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+              <EmptyStateContainer className="h-full flex flex-col items-center justify-center px-4 py-8 text-center">
                 <MotionDiv
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5 }}
-                  className="max-w-2xl mx-auto"
+                  className="w-full max-w-xl mx-auto"
                 >
-                  <EmptyStateIcon className="mb-6">
-                    <Bot className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-600" />
+                  <EmptyStateIcon className="mb-4">
+                    <Bot className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600" />
                   </EmptyStateIcon>
-                  <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-3">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                     Welcome to TallyAI
                   </h2>
-                  <p className="text-gray-500 max-w-md mx-auto mb-8 sm:mb-10 text-sm sm:text-base">
-                    I'm your AI assistant for financial analysis and business insights. How can I help you today?
+                  <p className="text-gray-500 max-w-md mx-auto mb-6 text-sm">
+                    I'm your AI assistant for financial analysis and business insights.
                   </p>
-                  <SuggestionGrid className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
+                  <SuggestionGrid className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-2xl mx-auto">
                     {SUGGESTIONS.map((suggestion, index) => (
                       <MotionDiv
                         key={index}
@@ -326,9 +334,9 @@ export function TallyAIChatPage() {
                       >
                         <SuggestionButton
                           onClick={() => setInput(suggestion)}
-                          className="w-full p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+                          className="w-full p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
                         >
-                          <p className="text-sm sm:text-base font-medium text-gray-900">
+                          <p className="text-sm font-medium text-gray-900 line-clamp-2">
                             {suggestion}
                           </p>
                         </SuggestionButton>
@@ -339,18 +347,18 @@ export function TallyAIChatPage() {
               </EmptyStateContainer>
             ) : (
               <div 
-                className="relative w-full will-change-transform"
+                className="relative w-full will-change-transform min-h-full"
                 style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
               >
                 {virtualMessages}
                 {isLoading && <LoadingMessage />}
-                <div ref={messagesEndRef} className="h-16" />
+                <div ref={messagesEndRef} className="h-4" />
               </div>
             )}
           </MessagesContainer>
         </ChatSection>
         
-        <div className="sticky bottom-0 z-10 bg-gradient-to-t from-gray-50 pt-4 pb-6">
+        <div className="sticky bottom-0 z-10 bg-gradient-to-t from-gray-50 pt-2 pb-4">
           <FloatingChatInput
             input={input}
             isLoading={isLoading}
